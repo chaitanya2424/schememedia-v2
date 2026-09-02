@@ -6,6 +6,21 @@ import '../../../../core/widgets/responsive.dart';
 import '../providers/assistant_providers.dart';
 import '../widgets/chat_entry_view.dart';
 
+/// Example prompts -- shown as the empty state's primary content, and
+/// again (collapsed) via _MoreIdeas once a conversation is underway, since
+/// previously they vanished permanently after message one with no way
+/// back to them.
+const _examples = [
+  'I\'m a farmer with 2 acres, what schemes can help me?',
+  'Are there any scholarships for SC/ST students?',
+  'I\'m pregnant and unemployed -- what support is available?',
+];
+
+/// The backend's own validated limit (AssistantRequest.message, api/v1/
+/// routers/assistant.py) -- surfaced here via TextField's own maxLength so
+/// it's discoverable before a failed send, not after.
+const _maxMessageLength = 2000;
+
 /// Build-order step 5: natural-language chat against the grounded
 /// assistant. Local-only history (the backend is stateless per turn); no
 /// auth, no persistence -- matches the current contract exactly.
@@ -42,32 +57,32 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
+        duration: AppSpacing.durationMedium,
         curve: Curves.easeOut,
       );
     });
+  }
+
+  void _useExample(String example) {
+    _controller.text = example;
+    _send();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(assistantNotifierProvider);
     _scrollToBottomIfGrew(state.history.length);
+    final isEmpty = state.history.isEmpty && !state.isSending;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Assistant')),
       body: SafeArea(
         child: ResponsiveContainer(
-          maxWidth: 900,
           child: Column(
             children: [
               Expanded(
-                child: state.history.isEmpty && !state.isSending
-                    ? _EmptyState(
-                        onExampleTap: (example) {
-                          _controller.text = example;
-                          _send();
-                        },
-                      )
+                child: isEmpty
+                    ? _EmptyState(onExampleTap: _useExample)
                     : ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -80,6 +95,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                         },
                       ),
               ),
+              // Previously the example prompts vanished for good after the
+              // first message -- a small always-available way back to them.
+              if (!isEmpty) _MoreIdeas(onExampleTap: _useExample),
               _InputBar(controller: _controller, enabled: !state.isSending, onSend: _send),
             ],
           ),
@@ -89,16 +107,54 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   }
 }
 
+class _MoreIdeas extends StatefulWidget {
+  const _MoreIdeas({required this.onExampleTap});
+
+  final ValueChanged<String> onExampleTap;
+
+  @override
+  State<_MoreIdeas> createState() => _MoreIdeasState();
+}
+
+class _MoreIdeasState extends State<_MoreIdeas> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              icon: Icon(_expanded ? Icons.expand_less : Icons.lightbulb_outline),
+              label: Text(_expanded ? 'Hide question ideas' : 'More question ideas'),
+            ),
+          ),
+          if (_expanded) ...[
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final example in _examples)
+                  ActionChip(label: Text(example), onPressed: () => widget.onExampleTap(example)),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.onExampleTap});
 
   final ValueChanged<String> onExampleTap;
-
-  static const _examples = [
-    'I\'m a farmer with 2 acres, what schemes can help me?',
-    'Are there any scholarships for SC/ST students?',
-    'I\'m pregnant and unemployed -- what support is available?',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -193,8 +249,12 @@ class _InputBar extends StatelessWidget {
               enabled: enabled,
               minLines: 1,
               maxLines: 5,
+              maxLength: _maxMessageLength,
               textInputAction: TextInputAction.send,
-              decoration: const InputDecoration(hintText: 'Ask about a scheme or your eligibility…'),
+              decoration: const InputDecoration(
+                hintText: 'Ask about a scheme or your eligibility…',
+                counterText: '',
+              ),
               onSubmitted: (_) => onSend(),
             ),
           ),

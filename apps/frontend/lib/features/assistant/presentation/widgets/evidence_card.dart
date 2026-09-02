@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/status_colors.dart';
+import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/eligibility_state_badge.dart';
 import '../../../../core/widgets/verification_badge.dart';
 import '../../domain/assistant_evidence.dart';
@@ -37,54 +38,48 @@ class _EvidenceCardState extends State<EvidenceCard> {
     final theme = Theme.of(context);
     final hasDetails = e.eligibilityExplanations.isNotEmpty || e.missingAttributes.isNotEmpty;
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        onTap: () => context.push(AppRoutes.schemeDetailPath(e.schemeId)),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
+    return AppCard(
+      onTap: () => context.push(AppRoutes.schemeDetailPath(e.schemeId)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(e.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  EligibilityStateBadge(state: e.eligibilityState),
-                ],
+              Expanded(
+                child: Text(e.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               ),
-              if (e.category != null) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(e.category!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
-              ],
-              const SizedBox(height: AppSpacing.sm),
-              VerificationBadge(status: e.verificationStatus, needsReview: e.needsReview),
-              if (hasDetails) ...[
-                const SizedBox(height: AppSpacing.xs),
-                TextButton.icon(
-                  onPressed: () => setState(() => _expanded = !_expanded),
-                  icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-                  label: Text(_expanded ? 'Hide details' : 'Why this scheme?'),
-                ),
-                if (_expanded) ...[
-                  const Divider(height: 1),
-                  const SizedBox(height: AppSpacing.xs),
-                  for (final explanation in e.eligibilityExplanations)
-                    _Bullet(icon: Icons.check_circle_outline, text: explanation, color: theme.colorScheme.primary),
-                  if (e.missingAttributes.isNotEmpty)
-                    _Bullet(
-                      icon: Icons.help_outline,
-                      text: 'Still unknown: ${e.missingAttributes.join(', ')}',
-                      color: StatusColors.warning(theme.colorScheme),
-                    ),
-                ],
-              ],
+              const SizedBox(width: AppSpacing.sm),
+              EligibilityStateBadge(state: e.eligibilityState),
             ],
           ),
-        ),
+          if (e.category != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(e.category!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          VerificationBadge(status: e.verificationStatus, needsReview: e.needsReview),
+          if (hasDetails) ...[
+            const SizedBox(height: AppSpacing.xs),
+            TextButton.icon(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
+              label: Text(_expanded ? 'Hide details' : 'Why this scheme?'),
+            ),
+            if (_expanded) ...[
+              const Divider(height: 1),
+              const SizedBox(height: AppSpacing.xs),
+              for (final explanation in e.eligibilityExplanations)
+                _Bullet(icon: Icons.check_circle_outline, text: explanation, color: theme.colorScheme.primary),
+              if (e.missingAttributes.isNotEmpty)
+                _Bullet(
+                  icon: Icons.help_outline,
+                  text: 'Still unknown: ${e.missingAttributes.join(', ')}',
+                  color: StatusColors.warning(theme.colorScheme),
+                ),
+            ],
+          ],
+        ],
       ),
     );
   }
@@ -104,8 +99,8 @@ class _Bullet extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: AppSpacing.iconSm, color: color),
+          const SizedBox(width: AppSpacing.xs + 2),
           Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
         ],
       ),

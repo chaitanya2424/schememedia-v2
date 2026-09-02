@@ -145,7 +145,7 @@ class _GroundingWarningBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 18, color: color),
+          Icon(Icons.warning_amber_rounded, size: AppSpacing.iconSm, color: color),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
@@ -187,7 +187,7 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, size: 18, color: scheme.onErrorContainer),
+          Icon(Icons.error_outline, size: AppSpacing.iconSm, color: scheme.onErrorContainer),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(message, style: TextStyle(color: scheme.onErrorContainer))),
         ],
