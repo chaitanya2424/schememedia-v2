@@ -7,6 +7,7 @@ import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
 import '../../domain/recommendation.dart';
+import '../providers/profile_form_provider.dart';
 import '../providers/recommendations_providers.dart';
 import '../widgets/attribute_groups.dart';
 import '../widgets/profile_form.dart';
@@ -30,13 +31,11 @@ class RecommendationsScreen extends ConsumerStatefulWidget {
 
 class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen> {
   final _queryController = TextEditingController();
-  final _formController = ProfileFormController();
   String? _queryError;
 
   @override
   void dispose() {
     _queryController.dispose();
-    _formController.dispose();
     super.dispose();
   }
 
@@ -47,19 +46,21 @@ class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen> {
       return;
     }
     if (_queryError != null) setState(() => _queryError = null);
-    final profile = _formController.isEmpty ? null : _formController.toProfileJson();
+    final formController = ref.read(profileFormControllerProvider);
+    final profile = formController.isEmpty ? null : formController.toProfileJson();
     ref.read(recommendationsNotifierProvider.notifier).fetch(query: query, profile: profile);
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(recommendationsNotifierProvider);
+    final formController = ref.watch(profileFormControllerProvider);
     final wide = Breakpoints.of(context) == ScreenSize.wide;
 
     final formPane = _FormPane(
       queryController: _queryController,
       queryError: _queryError,
-      formController: _formController,
+      formController: formController,
       onSubmit: _submit,
       loading: state.isLoading,
     );
