@@ -174,6 +174,25 @@ docker run -e DATABASE_URL=... -p 8000:8000 schememedia-api
 - Point liveness checks at `/health`, readiness at `/ready`
 - Database credentials from the platform's secret store, never an image layer
 
+### Rate limiting
+
+Every route is rate-limited per client IP (`core/rate_limit.py`), in-memory by
+default — correct for a single instance; pass `storage_uri="redis://..."` to
+the `Limiter` there the moment a second instance is added, no other code
+changes.
+
+| Route | Limit | Why |
+|---|---|---|
+| `POST /api/v1/assistant/message` | **5/minute** | Strictest — Gemini's free-tier daily quota (20 requests/day) can be exhausted by a single burst |
+| `POST /api/v1/recommendations` | 20/minute | Database-only, still bounded |
+| `GET /api/v1/search` | 30/minute | Database-only, the cheapest call |
+| `GET /api/v1/schemes/{identifier}` | 30/minute | |
+
+A request over its route's limit gets `429` in the same `{"error": {...}}`
+envelope as every other error, plus a `Retry-After` header. Request bodies
+over 100KB (`main.py`'s `MAX_REQUEST_BODY_BYTES` — every real payload this
+API accepts is well under 10KB) get `413`, same envelope.
+
 ### Connecting to Neon or another pooled PostgreSQL
 
 Set `DB_DISABLE_STATEMENT_CACHE=true` when using a **pooled** endpoint.

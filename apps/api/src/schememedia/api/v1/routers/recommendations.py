@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,6 +23,7 @@ from schememedia.api.v1.schemas.common import (
     VerificationStatusOut,
 )
 from schememedia.core.deps import RecommendationServiceDep
+from schememedia.core.rate_limit import RECOMMENDATIONS_LIMIT, limiter
 from schememedia.db.models.enums import ALL_ATTRIBUTE_KEYS
 from schememedia.services.eligibility_matcher import RuleEvaluation
 from schememedia.services.recommendation import Recommendation
@@ -130,8 +131,13 @@ class RecommendationResponseOut(BaseModel):
     response_model=RecommendationResponseOut,
     operation_id="getRecommendations",
     summary="Search ranked and annotated with eligibility against an optional profile",
+    responses={
+        429: {"description": f"Rate limited -- {RECOMMENDATIONS_LIMIT} per client."}
+    },
 )
+@limiter.limit(RECOMMENDATIONS_LIMIT)
 async def get_recommendations(
+    request: Request,  # required by @limiter.limit -- see its own docstring on why
     service: RecommendationServiceDep,
     body: Annotated[RecommendationRequest, Body()],
 ) -> RecommendationResponseOut:

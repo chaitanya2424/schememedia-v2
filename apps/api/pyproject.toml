@@ -28,6 +28,10 @@ dependencies = [
     # provider via LLM_PROVIDER never requires the other's credentials.
     "google-genai>=0.7.0",  # default dev provider -- has a free tier
     "anthropic>=0.70.0",  # optional, paid
+    # Rate limiting (core/rate_limit.py). In-memory backend by default --
+    # correct for a single instance, and the documented upgrade path to a
+    # Redis backend is a one-line storage_uri change, not a rewrite.
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,6 +23,7 @@ from schememedia.api.v1.schemas.common import (
 )
 from schememedia.core.deps import SchemeDetailServiceDep
 from schememedia.core.errors import ErrorEnvelopeOut, NotFoundError
+from schememedia.core.rate_limit import SCHEME_DETAIL_LIMIT, limiter
 
 router = APIRouter(prefix="/schemes", tags=["schemes"])
 
@@ -86,10 +87,13 @@ class SchemeDetailOut(BaseModel):
         404: {
             "model": ErrorEnvelopeOut,
             "description": "No active scheme matches the given scheme_id or slug.",
-        }
+        },
+        429: {"description": f"Rate limited -- {SCHEME_DETAIL_LIMIT} per client."},
     },
 )
+@limiter.limit(SCHEME_DETAIL_LIMIT)
 async def get_scheme_detail(
+    request: Request,  # required by @limiter.limit -- see its own docstring on why
     service: SchemeDetailServiceDep,
     identifier: Annotated[
         str,

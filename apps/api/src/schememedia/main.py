@@ -19,9 +19,17 @@ from schememedia.api.v1.routers import health
 from schememedia.core.config import Settings, get_settings
 from schememedia.core.errors import register_exception_handlers
 from schememedia.core.logging import configure_logging, get_logger
-from schememedia.core.middleware import RequestContextMiddleware
+from schememedia.core.middleware import MaxBodySizeMiddleware, RequestContextMiddleware
+from schememedia.core.rate_limit import limiter
 from schememedia.db.session import dispose_engine, init_engine
 from schememedia.db.sync_session import dispose_sync_engine, init_sync_engine
+
+# Every request body this API ever legitimately receives is a small JSON
+# document -- the largest, a ~26-attribute recommendations profile plus a
+# query string, is comfortably under 10KB. 100KB leaves ~10x headroom for
+# that while still blocking a multi-MB abuse attempt long before it reaches
+# Pydantic parsing.
+MAX_REQUEST_BODY_BYTES = 100_000
 
 logger = get_logger(__name__)
 
@@ -67,8 +75,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None if settings.is_production else "/openapi.json",
     )
     app.state.settings = settings
+    # slowapi's own convention: routes reach this via `request.app.state.
+    # limiter`, and it's what core/errors.py's RateLimitExceeded handler
+    # reads the hit limit's window from.
+    app.state.limiter = limiter
 
-    # Order matters: request context is outermost so every later layer,
+    # Order matters -- each `add_middleware` call becomes the new outermost
+    # layer (see GZip's own comment below for why that's non-obvious).
+    # MaxBodySizeMiddleware added first, so RequestContextMiddleware (added
+    # second) wraps it: request_id_ctx is already set by the time a
+    # too-large request gets rejected, so that response carries a request
+    # ID like every other error response does.
+    app.add_middleware(MaxBodySizeMiddleware, max_body_size=MAX_REQUEST_BODY_BYTES)
+    # Request context is outermost among these two so every later layer,
     # including error handlers, sees the request ID.
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(

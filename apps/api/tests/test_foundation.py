@@ -7,12 +7,16 @@ Postgres is absent is exactly the resilience v1 lacked.
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
+
 import pytest
-from httpx import AsyncClient
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from pydantic import ValidationError as PydanticValidationError
 
 from schememedia.core.config import Settings
 from schememedia.core.errors import NotFoundError
+from schememedia.main import create_app
 
 # ---------- Liveness ----------
 
@@ -36,9 +40,43 @@ async def test_health_does_not_require_database(client: AsyncClient) -> None:
 # ---------- Readiness ----------
 
 
+@pytest_asyncio.fixture
+async def client_without_database() -> AsyncGenerator[AsyncClient, None]:
+    """A dedicated app bound to a database URL nothing is listening on, in
+    any environment -- deliberately NOT the shared `client` fixture.
+
+    A previous version of both tests below reused `client` (real,
+    reachable test/test credentials matching CI's own Postgres service)
+    and relied on it reporting "degraded" anyway -- true only by accident,
+    when a local development machine's own Postgres role setup happened
+    not to have a matching test/test role. In a real CI run, where those
+    exact credentials ARE provisioned on purpose, `/ready` correctly
+    reported 200, and both tests below silently tested nothing. Port 1 is
+    a reserved port nothing binds to on a loopback interface, so a
+    connection attempt fails immediately (a real refusal, not a timeout)
+    the same way in local dev, CI, or anywhere else.
+    """
+    settings = Settings(
+        app_env="test",
+        database_url="postgresql://nobody:nobody@localhost:1/does-not-exist",
+        log_json=False,
+        log_level="WARNING",
+        cors_origins=["http://localhost:3000"],
+    )
+    app = create_app(settings)
+    transport = ASGITransport(app=app)
+    async with (
+        AsyncClient(transport=transport, base_url="http://test") as ac,
+        app.router.lifespan_context(app),
+    ):
+        yield ac
+
+
 @pytest.mark.asyncio
-async def test_ready_reports_degraded_without_database(client: AsyncClient) -> None:
-    response = await client.get("/ready")
+async def test_ready_reports_degraded_without_database(
+    client_without_database: AsyncClient,
+) -> None:
+    response = await client_without_database.get("/ready")
     assert response.status_code == 503
     body = response.json()
     assert body["status"] == "degraded"
@@ -47,11 +85,15 @@ async def test_ready_reports_degraded_without_database(client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
-async def test_ready_does_not_leak_connection_details(client: AsyncClient) -> None:
+async def test_ready_does_not_leak_connection_details(
+    client_without_database: AsyncClient,
+) -> None:
     """Driver exceptions can embed the connection string. Never echo them."""
-    response = await client.get("/ready")
+    response = await client_without_database.get("/ready")
+    assert response.status_code == 503  # confirms this exercised the failure path at all
     assert "password" not in response.text.lower()
     assert "postgresql://" not in response.text
+    assert "nobody" not in response.text
 
 
 # ---------- Request IDs ----------
@@ -118,8 +160,6 @@ def test_sqlalchemy_url_forces_asyncpg_driver() -> None:
 
 
 def test_production_hides_interactive_docs() -> None:
-    from schememedia.main import create_app
-
     settings = Settings(
         app_env="production",
         database_url="postgresql://u:p@localhost:5432/db",

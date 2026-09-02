@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
@@ -36,6 +36,7 @@ from schememedia.api.v1.schemas.common import (
 from schememedia.core.deps import LLMProviderDep, RecommendationServiceDep
 from schememedia.core.errors import ServiceUnavailableError
 from schememedia.core.logging import get_logger
+from schememedia.core.rate_limit import ASSISTANT_LIMIT, limiter
 from schememedia.services.assistant import run_assistant_turn
 
 logger = get_logger(__name__)
@@ -98,15 +99,18 @@ class AssistantResponseOut(BaseModel):
     operation_id="sendAssistantMessage",
     summary="Ask the grounded assistant a natural-language question",
     responses={
+        429: {"description": f"Rate limited -- {ASSISTANT_LIMIT} per client."},
         503: {
             "description": (
                 "The configured LLM provider or a data dependency it needs "
                 "is unavailable. Safe to retry."
             )
-        }
+        },
     },
 )
+@limiter.limit(ASSISTANT_LIMIT)
 async def send_assistant_message(
+    request: Request,  # required by @limiter.limit -- see its own docstring on why
     provider: LLMProviderDep,
     service: RecommendationServiceDep,
     body: Annotated[AssistantRequest, Body()],

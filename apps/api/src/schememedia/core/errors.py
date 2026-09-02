@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from schememedia.core.logging import get_logger, request_id_ctx
@@ -129,6 +130,39 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=exc.status_code,
             content=_envelope(code=exc.code, message=exc.message, details=exc.details),
         )
+
+    @app.exception_handler(RateLimitExceeded)
+    async def _rate_limit_exceeded(
+        _request: Request, exc: RateLimitExceeded
+    ) -> JSONResponse:
+        # RateLimitExceeded is itself a StarletteHTTPException subclass, so
+        # without this handler it would still get a structured response
+        # from _http_exception below (Starlette dispatches to the most
+        # specific registered handler in the exception's MRO) -- registered
+        # separately anyway so the response reuses RateLimitError's code and
+        # carries a real Retry-After header, which _http_exception has no
+        # way to know how to set.
+        #
+        # `exc.limit` is typed `Limit | None` (a class-level `limit = None`
+        # default the real `__init__(self, limit: Limit)` -- non-Optional --
+        # always overwrites), so this is narrowing for mypy, not new runtime
+        # behaviour; the `else` branch only exists for the type checker.
+        limit_wrapper = exc.limit
+        details: dict[str, Any] = {}
+        retry_after = "60"
+        if limit_wrapper is not None:
+            limit_item = limit_wrapper.limit
+            details["limit"] = str(limit_item)
+            retry_after = str(limit_item.get_expiry())
+        logger.info("rate_limited", limit=details.get("limit"))
+        response = JSONResponse(
+            status_code=RateLimitError.status_code,
+            content=_envelope(
+                code=RateLimitError.code, message=RateLimitError.message, details=details
+            ),
+        )
+        response.headers["Retry-After"] = retry_after
+        return response
 
     @app.exception_handler(RequestValidationError)
     async def _request_validation(

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,6 +20,7 @@ from schememedia.api.v1.schemas.common import (
     VerificationStatusOut,
 )
 from schememedia.core.deps import SearchServiceDep
+from schememedia.core.rate_limit import SEARCH_LIMIT, limiter
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -70,8 +71,11 @@ class SearchResponseOut(BaseModel):
     response_model=SearchResponseOut,
     operation_id="searchSchemes",
     summary="Hybrid keyword + semantic search over schemes",
+    responses={429: {"description": f"Rate limited -- {SEARCH_LIMIT} per client."}},
 )
+@limiter.limit(SEARCH_LIMIT)
 async def search_schemes(
+    request: Request,  # required by @limiter.limit -- see its own docstring on why
     service: SearchServiceDep,
     q: Annotated[
         str, Query(min_length=1, max_length=200, description="Natural-language query")
