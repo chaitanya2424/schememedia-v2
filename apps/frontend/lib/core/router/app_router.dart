@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/assistant/presentation/screens/assistant_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/recommendations/presentation/screens/recommendations_screen.dart';
+import '../../features/saved/presentation/screens/saved_screen.dart';
 import '../../features/scheme_detail/presentation/screens/scheme_detail_screen.dart';
 import '../../features/search/presentation/screens/search_results_screen.dart';
 import 'app_shell.dart';
@@ -56,9 +58,27 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: AppRoutes.saved,
+                name: AppRouteNames.saved,
+                builder: (context, state) => const SavedScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: AppRoutes.assistant,
                 name: AppRouteNames.assistant,
                 builder: (context, state) => const AssistantScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                name: AppRouteNames.profile,
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
           ),

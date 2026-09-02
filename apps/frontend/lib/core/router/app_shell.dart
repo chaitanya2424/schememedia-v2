@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_shadows.dart';
 import '../widgets/responsive.dart';
 import 'routes.dart';
 
-/// One persistent nav frame for all five top-level screens -- bottom
+/// One persistent nav frame for all six top-level screens -- bottom
 /// [NavigationBar] on mobile, [NavigationRail] on tablet/web-wide. See the
 /// frontend architecture plan's Routing section: "one shell, not per-screen
 /// scaffolding."
+///
+/// Redesign v2: six real destinations (Home/Explore/For You/Saved/
+/// Assistant/Profile) -- confirmed against reference mockups to fit
+/// comfortably on a mobile bottom bar (two-word labels wrap to two lines)
+/// rather than the "5 tabs + avatar" compromise originally spec'd. A soft
+/// shadow separates the bar/rail from content instead of v1's hard
+/// `Divider`/`VerticalDivider` line.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -15,9 +24,11 @@ class AppShell extends StatelessWidget {
 
   static const _destinations = [
     (icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'Home'),
-    (icon: Icons.search_outlined, selectedIcon: Icons.search, label: 'Search'),
-    (icon: Icons.fact_check_outlined, selectedIcon: Icons.fact_check, label: 'For you'),
+    (icon: Icons.search_outlined, selectedIcon: Icons.search, label: 'Explore'),
+    (icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome, label: 'For You'),
+    (icon: Icons.bookmark_outline, selectedIcon: Icons.bookmark, label: 'Saved'),
     (icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'Assistant'),
+    (icon: Icons.person_outline, selectedIcon: Icons.person, label: 'Profile'),
   ];
 
   void _onSelect(int index) {
@@ -27,21 +38,29 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wide = Breakpoints.of(context) != ScreenSize.mobile;
+    final colors = context.colors;
 
     if (wide) {
       return Scaffold(
         body: Row(
           children: [
-            NavigationRail(
-              selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: _onSelect,
-              labelType: NavigationRailLabelType.all,
-              destinations: [
-                for (final d in _destinations)
-                  NavigationRailDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selectedIcon), label: Text(d.label)),
-              ],
+            DecoratedBox(
+              decoration: BoxDecoration(boxShadow: AppShadows.nav(colors.shadow)),
+              child: NavigationRail(
+                backgroundColor: colors.surface,
+                selectedIndex: navigationShell.currentIndex,
+                onDestinationSelected: _onSelect,
+                labelType: NavigationRailLabelType.all,
+                destinations: [
+                  for (final d in _destinations)
+                    NavigationRailDestination(
+                      icon: Icon(d.icon),
+                      selectedIcon: Icon(d.selectedIcon),
+                      label: Text(d.label),
+                    ),
+                ],
+              ),
             ),
-            const VerticalDivider(width: 1),
             Expanded(child: navigationShell),
           ],
         ),
@@ -50,13 +69,16 @@ class AppShell extends StatelessWidget {
 
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: _onSelect,
-        destinations: [
-          for (final d in _destinations)
-            NavigationDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selectedIcon), label: d.label),
-        ],
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(boxShadow: AppShadows.nav(colors.shadow)),
+        child: NavigationBar(
+          selectedIndex: navigationShell.currentIndex,
+          onDestinationSelected: _onSelect,
+          destinations: [
+            for (final d in _destinations)
+              NavigationDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selectedIcon), label: d.label),
+          ],
+        ),
       ),
     );
   }
