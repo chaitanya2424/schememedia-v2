@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../domain/enums.dart';
 import '../theme/status_colors.dart';
+import 'status_pill.dart';
 
 /// Renders `eligibility_state` consistently everywhere it appears
 /// (recommendations, assistant evidence). `fail` is intentionally muted,
@@ -15,22 +16,10 @@ class EligibilityStateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = StatusColors.eligibility(state, scheme);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(_icon(state), size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(_label(state), style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-        ],
-      ),
+    return StatusPill(
+      color: StatusColors.eligibility(state, scheme),
+      label: _label(state),
+      icon: _icon(state),
     );
   }
 

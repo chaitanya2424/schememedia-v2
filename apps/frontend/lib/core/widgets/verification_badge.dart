@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../domain/enums.dart';
+import '../theme/app_spacing.dart';
 import '../theme/status_colors.dart';
+import 'status_pill.dart';
 
 /// Renders `verification_status` (+ `needs_review`, when true) consistently
 /// everywhere a scheme appears -- see the frontend architecture plan's note
 /// that these two fields are the product's core honesty requirement, not
 /// an afterthought on one screen.
+///
+/// Each state now carries its own icon (previously text-only, unlike
+/// [EligibilityStateBadge]'s icon+text pattern -- inconsistent visual
+/// grammar for two badges representing the same "honesty requirement").
 class VerificationBadge extends StatelessWidget {
   const VerificationBadge({super.key, required this.status, this.needsReview = false});
 
@@ -17,14 +23,30 @@ class VerificationBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Wrap(
-      spacing: 6,
-      runSpacing: 4,
+      spacing: AppSpacing.xs + 2,
+      runSpacing: AppSpacing.xs,
       children: [
-        _StatusChip(color: StatusColors.verification(status, scheme), label: _label(status)),
-        if (needsReview) _StatusChip(color: StatusColors.warning(scheme), label: 'Needs review'),
+        StatusPill(
+          color: StatusColors.verification(status, scheme),
+          label: _label(status),
+          icon: _icon(status),
+        ),
+        if (needsReview)
+          StatusPill(
+            color: StatusColors.warning(scheme),
+            label: 'Needs review',
+            icon: Icons.flag_outlined,
+          ),
       ],
     );
   }
+
+  IconData _icon(VerificationStatus status) => switch (status) {
+    VerificationStatus.officiallyVerified => Icons.check_circle,
+    VerificationStatus.sourceProvided => Icons.description_outlined,
+    VerificationStatus.unverified => Icons.help_outline,
+    VerificationStatus.unrecognized => Icons.help_outline,
+  };
 
   String _label(VerificationStatus status) => switch (status) {
     VerificationStatus.officiallyVerified => 'Officially verified',
@@ -32,24 +54,4 @@ class VerificationBadge extends StatelessWidget {
     VerificationStatus.unverified => 'Unverified',
     VerificationStatus.unrecognized => 'Unknown',
   };
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-    );
-  }
 }

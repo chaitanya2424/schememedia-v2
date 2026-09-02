@@ -36,6 +36,11 @@ double _contrastRatio(Color a, Color b) {
 const _minContrast = 4.5;
 
 void main() {
+  // AppTheme now builds its TextTheme via google_fonts, which needs the
+  // Flutter binding initialized to load font assets -- this file uses
+  // plain test(), not testWidgets(), so that never happens implicitly.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   final lightScheme = AppTheme.light().colorScheme;
   final darkScheme = AppTheme.dark().colorScheme;
 
