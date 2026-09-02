@@ -11,6 +11,8 @@ abstract final class AppRoutes {
   static const assistant = '/assistant';
   static const saved = '/saved';
   static const profile = '/profile';
+  static const onboarding = '/onboarding';
+  static const login = '/login';
 
   static String schemeDetailPath(String identifier) => '/schemes/$identifier';
 
@@ -25,4 +27,6 @@ abstract final class AppRouteNames {
   static const assistant = 'assistant';
   static const saved = 'saved';
   static const profile = 'profile';
+  static const onboarding = 'onboarding';
+  static const login = 'login';
 }
