@@ -10,11 +10,36 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Annotated, Literal
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 Environment = Literal["local", "test", "staging", "production"]
+
+
+def _translate_libpq_ssl_params(url: str) -> str:
+    """Rewrite libpq-style `sslmode`/`channel_binding` query params into
+    what asyncpg's SQLAlchemy dialect actually accepts.
+
+    Providers that hand out ready-to-paste connection strings (Neon
+    included) format them for libpq/psycopg -- `?sslmode=require&
+    channel_binding=require`. SQLAlchemy's asyncpg dialect passes a URL's
+    query string straight through as **kwargs to `asyncpg.connect()`,
+    which has no `sslmode` or `channel_binding` parameter (only `ssl`,
+    which happens to accept the same mode names -- see asyncpg's
+    `SSLMode`) -- so an unmodified provider connection string fails
+    before ever reaching the network with `TypeError: connect() got an
+    unexpected keyword argument 'sslmode'`. `channel_binding` has no
+    asyncpg equivalent at all and is simply dropped; the connection is
+    still fully TLS-encrypted and SCRAM-authenticated via `ssl=require`.
+    """
+    split = urlsplit(url)
+    query = dict(parse_qsl(split.query))
+    if "sslmode" in query:
+        query["ssl"] = query.pop("sslmode")
+    query.pop("channel_binding", None)
+    return urlunsplit(split._replace(query=urlencode(query)))
 
 
 class Settings(BaseSettings):
@@ -90,9 +115,9 @@ class Settings(BaseSettings):
     def sqlalchemy_url(self) -> str:
         """Force the asyncpg driver regardless of how the URL was supplied."""
         url = str(self.database_url)
-        if url.startswith("postgresql+"):
-            return url
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if not url.startswith("postgresql+"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return _translate_libpq_ssl_params(url)
 
 
 @lru_cache(maxsize=1)

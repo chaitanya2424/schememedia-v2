@@ -159,6 +159,30 @@ def test_sqlalchemy_url_forces_asyncpg_driver() -> None:
     assert settings.sqlalchemy_url.startswith("postgresql+asyncpg://")
 
 
+def test_sqlalchemy_url_translates_neons_libpq_ssl_params() -> None:
+    """Neon (and most managed Postgres providers) hand out a ready-to-paste
+    connection string shaped for libpq/psycopg: `?sslmode=require&
+    channel_binding=require`. SQLAlchemy's asyncpg dialect forwards a URL's
+    query string straight through as **kwargs to asyncpg.connect(), which
+    has no `sslmode` or `channel_binding` parameter -- only `ssl` -- so an
+    untranslated provider URL fails before ever reaching the network with
+    `TypeError: connect() got an unexpected keyword argument 'sslmode'`.
+    This was caught by hand while provisioning a real Neon staging
+    database, not by any prior test.
+    """
+    settings = Settings(
+        database_url=(
+            "postgresql://u:p@ep-example.us-east-2.aws.neon.tech/neondb"
+            "?sslmode=require&channel_binding=require"
+        ),
+    )
+    url = settings.sqlalchemy_url
+    assert url.startswith("postgresql+asyncpg://")
+    assert "ssl=require" in url
+    assert "sslmode" not in url
+    assert "channel_binding" not in url
+
+
 def test_production_hides_interactive_docs() -> None:
     settings = Settings(
         app_env="production",

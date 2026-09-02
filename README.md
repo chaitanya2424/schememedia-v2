@@ -201,6 +201,16 @@ otherwise fails intermittently with `DuplicatePreparedStatementError`.
 
 Use the **direct** (non-pooled) endpoint for migrations.
 
+Paste the provider's connection string as-is, `sslmode`/`channel_binding` and
+all -- `Settings.sqlalchemy_url` (`core/config.py`) translates them into what
+asyncpg actually accepts. Neon's copy-paste string is shaped for
+libpq/psycopg (`?sslmode=require&channel_binding=require`); SQLAlchemy's
+asyncpg dialect forwards a URL's query string straight through as `**kwargs`
+to `asyncpg.connect()`, which has no `sslmode` or `channel_binding`
+parameter -- only `ssl` -- so an untranslated string fails before ever
+reaching the network with `TypeError: connect() got an unexpected keyword
+argument 'sslmode'`.
+
 ---
 
 # Project layout
