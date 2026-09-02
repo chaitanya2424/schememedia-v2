@@ -12,7 +12,9 @@ importing twice must produce identical row counts.
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import create_engine, func, select, text
@@ -27,6 +29,7 @@ from schememedia.db.models import (
     SchemeTag,
     Tag,
 )
+from schememedia.importer import pipeline as pipeline_module
 from schememedia.importer.pipeline import run_import, sync_database_url
 from tests.conftest import database_is_reachable, resolve_test_database_url
 
@@ -35,6 +38,16 @@ DATABASE_AVAILABLE = database_is_reachable(TEST_DATABASE_URL)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCHEMES_JSON = REPO_ROOT / "schemes.json"
+
+# Small, fast, always-tracked fixture (8 records) -- reused from test_search.py's
+# convention -- for the batching tests below, which don't need the full
+# 1,000-scheme dataset and would otherwise slow the suite down needlessly.
+SMALL_FIXTURE = Path(__file__).parent / "fixtures" / "search_schemes.json"
+
+_TRUNCATE_ALL = text(
+    "TRUNCATE schemes, categories, tags, scheme_tags, "
+    "scheme_benefits, scheme_documents, scheme_eligibility_rules CASCADE"
+)
 
 pytestmark = [
     pytest.mark.skipif(
@@ -97,6 +110,105 @@ def imported_twice():
         )
         session.commit()
     engine.dispose()
+
+
+@pytest.fixture
+def truncated_session() -> Generator[Session, None, None]:
+    """A fresh, function-scoped session against an empty database.
+
+    Unlike `imported_twice` above (module-scoped, runs its two imports
+    once up front), the batching tests below need to control commits and
+    induce a mid-run failure themselves, so each gets its own clean slate.
+    """
+    engine = create_engine(sync_database_url(TEST_DATABASE_URL), future=True)
+    with Session(engine) as session:
+        session.execute(_TRUNCATE_ALL)
+        session.commit()
+        yield session
+        session.execute(_TRUNCATE_ALL)
+        session.commit()
+    engine.dispose()
+
+
+def _fail_on_nth_call(n: int):
+    """A stand-in for `_import_scheme` that raises on its `n`-th invocation
+    and otherwise behaves exactly like the real thing.
+
+    A dropped connection and a genuine data error surface identically to
+    `run_import` -- both are just "an exception happened mid-batch" -- so a
+    plain `RuntimeError` is a faithful, deterministic stand-in for the
+    connection drops actually observed importing into a real Neon staging
+    database (real network flakiness can't be induced reliably in a test).
+    """
+    real_import_scheme = pipeline_module._import_scheme
+    calls = {"count": 0}
+
+    def _flaky(*args: object, **kwargs: object) -> None:
+        calls["count"] += 1
+        if calls["count"] == n:
+            raise RuntimeError("simulated dropped connection")
+        real_import_scheme(*args, **kwargs)
+
+    return _flaky
+
+
+# ---------------------------------------------------------------------------
+# Batching -- commits per chunk instead of one all-or-nothing transaction,
+# so a dropped connection over a WAN link (e.g. staging on Neon) loses at
+# most one batch's worth of work instead of everything. See pipeline.py's
+# DEFAULT_BATCH_SIZE and run_import() docstrings.
+# ---------------------------------------------------------------------------
+
+
+def test_batch_size_is_configurable(truncated_session: Session) -> None:
+    with patch.object(
+        truncated_session, "commit", wraps=truncated_session.commit
+    ) as commit_spy:
+        report = run_import(truncated_session, SMALL_FIXTURE, batch_size=3)
+
+    assert report.schemes_seen == 8
+    # ceil(8 / 3) = 3 scheme batches, plus one commit for categories/tags.
+    assert commit_spy.call_count == 4
+
+
+def test_partial_failure_rolls_back_only_the_failed_batch(
+    truncated_session: Session,
+) -> None:
+    # batch_size=2 over 8 records -> batches of schemes [1,2] [3,4] [5,6] [7,8].
+    # Failing on the 5th call lands partway through the third batch, so
+    # batches 1-2 (4 schemes) must survive and batch 3 must roll back whole.
+    with (
+        patch.object(pipeline_module, "_import_scheme", side_effect=_fail_on_nth_call(5)),
+        pytest.raises(RuntimeError, match="simulated dropped connection"),
+    ):
+        run_import(truncated_session, SMALL_FIXTURE, batch_size=2)
+
+    committed = truncated_session.scalar(select(func.count()).select_from(Scheme))
+    assert committed == 4
+
+
+def test_rerun_after_partial_failure_completes_without_duplicates(
+    truncated_session: Session,
+) -> None:
+    with (
+        patch.object(pipeline_module, "_import_scheme", side_effect=_fail_on_nth_call(5)),
+        pytest.raises(RuntimeError),
+    ):
+        run_import(truncated_session, SMALL_FIXTURE, batch_size=2)
+
+    committed_before_resume = truncated_session.scalar(
+        select(func.count()).select_from(Scheme)
+    )
+    assert committed_before_resume == 4
+
+    # No patch this time -- the resume runs to completion, exactly what a
+    # human re-running the CLI after a connection drop would do.
+    report = run_import(truncated_session, SMALL_FIXTURE, batch_size=2)
+
+    final_count = truncated_session.scalar(select(func.count()).select_from(Scheme))
+    assert final_count == 8
+    assert report.schemes_inserted + report.schemes_updated == 8
+    assert report.schemes_updated >= committed_before_resume
 
 
 # ---------------------------------------------------------------------------

@@ -18,7 +18,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from schememedia.core.config import get_settings
-from schememedia.importer.pipeline import run_import, sync_database_url
+from schememedia.importer.pipeline import (
+    DEFAULT_BATCH_SIZE,
+    run_import,
+    sync_database_url,
+)
 
 # apps/api/src/schememedia/cli/import_schemes.py -> repo root is 5 parents up.
 DEFAULT_PATH = Path(__file__).resolve().parents[5] / "schemes.json"
@@ -33,6 +37,16 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_PATH,
         help=f"Path to schemes.json (default: {DEFAULT_PATH})",
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=(
+            "Schemes committed per transaction (default: %(default)s). "
+            "See run_import()'s docstring for why this matters over a WAN "
+            "connection."
+        ),
+    )
     args = parser.parse_args(argv)
 
     if not args.path.exists():
@@ -43,8 +57,9 @@ def main(argv: list[str] | None = None) -> int:
     engine = create_engine(sync_database_url(str(settings.database_url)), future=True)
     try:
         with Session(engine) as session:
-            report = run_import(session, args.path)
-            session.commit()
+            # run_import() commits per batch itself -- see its docstring --
+            # so there is deliberately no trailing session.commit() here.
+            report = run_import(session, args.path, batch_size=args.batch_size)
     finally:
         engine.dispose()
 

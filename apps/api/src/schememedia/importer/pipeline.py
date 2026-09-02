@@ -72,6 +72,16 @@ TRUNCATION_LENGTH_THRESHOLD = 195
 
 _NON_ALNUM = re.compile(r"[^a-z0-9]+")
 
+# Committing the whole file in one transaction is instant on a local
+# loopback Postgres, but over a real WAN link (e.g. Neon) it's a
+# multi-minute transaction built from ~1,000 small round trips -- and a
+# single dropped connection anywhere in that window discarded everything,
+# discovered the hard way importing into a real staging database. Every
+# scheme write is already idempotent (ON CONFLICT upsert / delete-then-
+# reinsert, see the module docstring), so batching just moves the commit
+# boundary; it changes nothing about what gets written.
+DEFAULT_BATCH_SIZE = 50
+
 
 def sync_database_url(url: str) -> str:
     """Convert the app's asyncpg URL to a sync psycopg URL for batch jobs."""
@@ -395,14 +405,25 @@ def _reimport_rules(
         session.execute(insert(SchemeEligibilityRule), rows)
 
 
-def run_import(session: Session, path: Path) -> ImportReport:
-    """Import every scheme in `path` into the database. Safe to run repeatedly."""
+def run_import(
+    session: Session, path: Path, *, batch_size: int = DEFAULT_BATCH_SIZE
+) -> ImportReport:
+    """Import every scheme in `path` into the database. Safe to run repeatedly,
+    including re-running after a partial failure (see DEFAULT_BATCH_SIZE above):
+    a batch that fails -- a real data error or a dropped connection -- rolls
+    back only itself and re-raises, so the run stops loudly rather than
+    silently skipping the scheme. Every already-committed batch survives.
+    Re-running afterwards is the resume mechanism: already-committed schemes
+    are harmlessly re-upserted (reported as updated, not inserted), and
+    whatever didn't finish is processed for the first time.
+    """
     report = ImportReport()
     records: list[dict[str, Any]] = json.loads(Path(path).read_text(encoding="utf-8"))
     report.schemes_seen = len(records)
 
     category_cache = _upsert_categories(session, records, report)
     tag_cache = _upsert_tags(session, records, report)
+    session.commit()
 
     existing_slugs: dict[str, str] = {
         row.scheme_id: row.slug
@@ -410,16 +431,25 @@ def run_import(session: Session, path: Path) -> ImportReport:
     }
     used_slugs = set(existing_slugs.values())
 
-    for record in records:
-        _import_scheme(
-            session,
-            record,
-            category_cache=category_cache,
-            tag_cache=tag_cache,
-            existing_slugs=existing_slugs,
-            used_slugs=used_slugs,
-            report=report,
-        )
+    total = len(records)
+    for start in range(0, total, batch_size):
+        batch = records[start : start + batch_size]
+        try:
+            for record in batch:
+                _import_scheme(
+                    session,
+                    record,
+                    category_cache=category_cache,
+                    tag_cache=tag_cache,
+                    existing_slugs=existing_slugs,
+                    used_slugs=used_slugs,
+                    report=report,
+                )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        processed = min(start + batch_size, total)
+        print(f"  {processed}/{total} schemes imported")
 
-    session.flush()
     return report
