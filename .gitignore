@@ -1,0 +1,41 @@
+# Secrets -- must never be committed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node (Phase 9+)
+node_modules/
+.next/
+dist/
+.turbo/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# schemes.json (the real 1,000-scheme dataset) is deliberately tracked, not
+# ignored -- audit finding H2: apps/api/tests/test_import.py,
+# test_eligibility_matcher.py, test_recommendation.py, test_api_routes.py,
+# and the assistant tests all skip outright when this file is absent (see
+# each file's own `SCHEMES_JSON.exists()` guard), and CI's checkout has no
+# other way to obtain it. Ignoring it meant CI silently ran well under half
+# the test suite while still reporting green. It is public government
+# scheme data, not a secret, and 2.4MB is unremarkable for git.

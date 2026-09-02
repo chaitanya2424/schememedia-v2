@@ -1,0 +1,485 @@
+[
+  {
+    "scheme_id": "SCH_08134B86",
+    "name": "Distance Education Scholarship–Scholarship For Disabled Students Pursuing Degree, PG Courses",
+    "ministry": "Ministry of Education",
+    "category": "Health",
+    "scheme_type": "subsidy",
+    "jurisdiction": "state",
+    "state_code": "KL",
+    "description_short": "The Distance Education Scholarship–Scholarship For Disabled Students Pursuing Degree, PG Courses is a government scheme providing financial and/or administrative support to eligible beneficiaries. Eligible applicants can avail benefits by applying through the designated government portal or office.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": null,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": false,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": false,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": 100000,
+        "is_sc_st": false,
+        "has_bpl_card": false,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": true,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": false,
+        "is_lig": true,
+        "is_mig": false,
+        "is_woman": false,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "Under the scheme, the scholarship is given to eligible students for meeting the expenses of Registration fees, Course fees, Tuition fees, Exam fees, Purchase of books, study materials, etc. The amount"
+        }
+      ],
+      "documents_required": [
+        "Identity card i.e. Aadhaar Card Mobile number Email id Passport size photo Disability certificate from Medical board/  Disability Identity card Educational Certificates Copy of current course certificate ﻿ Certificate of Authorized Officer ﻿ Copy of Parent's Identity Document Income Certificate showing the Annual Income of the family from the concerned revenue official Copy of bills, receipts countersigned by the CDPOs (receipts of the registration fee, course fee, /tuition fee, and bills of purchased study materials and books Applicants from the second year onwards must submit the document of appearing in the previous year's examination. Bank details- Copy of Pass Book Other documents, if any"
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Distance Education",
+        "Scholarship",
+        "Student",
+        "Person With Disability",
+        "Degree",
+        "PG Courses",
+        "Open University"
+      ]
+    }
+  },
+  {
+    "scheme_id": "SCH_53E1A21D",
+    "name": "INDIRAMMA Widow Pension (Urban)",
+    "ministry": "Ministry of Rural Development",
+    "category": "Social Welfare",
+    "scheme_type": "subsidy",
+    "jurisdiction": "state",
+    "state_code": "AP",
+    "description_short": "The INDIRAMMA Widow Pension (Urban) is a government scheme providing financial and/or administrative support to eligible beneficiaries. Eligible applicants can avail benefits by applying through the designated government portal or office.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": null,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": false,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": true,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": null,
+        "is_sc_st": true,
+        "has_bpl_card": true,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": false,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": false,
+        "is_lig": true,
+        "is_mig": false,
+        "is_woman": false,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "Pension Amount: The scale of benefit under the pension will be notified by the Government of Andhra Pradesh. Mode of Disbursement: The Bill Collector disburses the pension to the eligible individuals "
+        }
+      ],
+      "documents_required": [
+        "Domicile Certificate Below Poverty Line (BPL) Certificate Proof of Widowhood"
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Widow",
+        "Woman",
+        "Urban",
+        "Below Poverty Line",
+        "BPL",
+        "Pension"
+      ]
+    }
+  },
+  {
+    "scheme_id": "SCH_D0145714",
+    "name": "House Subsidy Scheme",
+    "ministry": "Ministry of Housing and Urban Affairs",
+    "category": "Housing",
+    "scheme_type": "subsidy",
+    "jurisdiction": "state",
+    "state_code": "HP",
+    "description_short": "The House Subsidy Scheme is a government scheme providing financial and/or administrative support to eligible beneficiaries. It is aimed at empowering women through financial benefits and welfare support.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": null,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": false,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": true,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": 3,
+        "is_sc_st": true,
+        "has_bpl_card": false,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": false,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": false,
+        "is_lig": false,
+        "is_mig": false,
+        "is_woman": true,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "1.\tThe scheme provides a subsidy of Rs. 1,30,000/- for the construction of a house. 2.\tIndividuals from marginalized sections, including Scheduled Castes, Other Backward Classes, Minority Community, S"
+        }
+      ],
+      "documents_required": [
+        "Bonafide Himachali Certificate of the couple. Scheduled Cast/Other Backward Classes/Minority Community/Single Women or Handicapped Certificate. Income Certificate. Revenue Papers (Record of Right – Parcha & Tatima) Recommendation from the concerned Gram Panchayat. Certificate from the applicant that he/she is not availed any such subsidy earlier. Latest Photographs of the present house. ﻿"
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Housing Scheme",
+        "Subsidy",
+        "Construction",
+        "SC/ST",
+        "Women",
+        "Handicapped",
+        "Minority Scheme"
+      ]
+    }
+  },
+  {
+    "scheme_id": "SCH_2E48654C",
+    "name": "Farmers Training",
+    "ministry": "Ministry of Agriculture & Farmers Welfare",
+    "category": "Agriculture",
+    "scheme_type": "subsidy",
+    "jurisdiction": "state",
+    "state_code": "TN",
+    "description_short": "The Farmers Training is a government scheme providing financial and/or administrative support to eligible beneficiaries. It primarily helps farmers and agricultural workers improve their livelihoods through subsidies and technical assistance.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": null,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": true,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": false,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": null,
+        "is_sc_st": true,
+        "has_bpl_card": false,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": false,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": false,
+        "is_lig": false,
+        "is_mig": false,
+        "is_woman": false,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "Financial assistance: ₹5,000/- per training session of 50 Farmers/Agricultural labourers."
+        }
+      ],
+      "documents_required": [
+        "Proof of Identity (Aadhar Card, Voter ID, etc.). Proof of farming or agricultural labor status. Any other documents (if required)."
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Agriculture",
+        "Farmer",
+        "Training"
+      ]
+    }
+  },
+  {
+    "scheme_id": "SCH_34EE6268",
+    "name": "National Overseas Scholarship For Students With Disabilities",
+    "ministry": "Ministry of Education",
+    "category": "Health",
+    "scheme_type": "subsidy",
+    "jurisdiction": "central",
+    "state_code": null,
+    "description_short": "The National Overseas Scholarship For Students With Disabilities is a government scheme providing financial and/or administrative support to eligible beneficiaries. Eligible applicants can avail benefits by applying through the designated government portal or office.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": 35,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": false,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": false,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": 6,
+        "is_sc_st": true,
+        "has_bpl_card": false,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": true,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": false,
+        "is_lig": true,
+        "is_mig": false,
+        "is_woman": false,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "Annual Maintenance Allowance: For United States of America (USA) & other countries except UK: $15400 (US Dollars); For United Kingdom (UK): 9900 GBP (Great Britain Pounds) Contingency Allowance: For U"
+        }
+      ],
+      "documents_required": [
+        "Duly completed Pro-forma in duplicate Certificate of Proof of Date of Birth (Birth Certificate or Certificate of Passing 10th standard) Disability Certificate Voter ID Aadhaar Card Proof of residence, if the address mentioned in the application is different from the address mentioned in the Voter ID/Aadhaar Card. Copy of PAN Card of the applicant. Copy of Bank Account linked with Aadhaar No. Copy of PAN Card of Father/Mother/Guardian/Spouse Copy of Certificates and mark sheets in support of Educational qualifications. Income Tax Certificate in prescribed proforma Income Tax Return of the candidate/parents/guardians whose income is considered to determine the income ceiling. Details of the proposed study (in not more than 500 words) Copy of admission papers from the accredited universities/Institutions Copies of offer of admission by the university/prospectus etc. Self-attested certificate to the effect that you are not availing of any other scholarship for the same Course of study. Income Certificate Form. ﻿ Source(s): http://disabilityaffairs.gov.in/upload/uploadfiles/files/scholarship2(1).pdf http://disabilityaffairs.gov.in/upload/uploadfiles/files/Appl-Form%20-NOS(1).pdf"
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Scholarship",
+        "Student",
+        "Person With Disability",
+        "Higher Education",
+        "Degree",
+        "Empowerment",
+        "PhD",
+        "Post-Graduation"
+      ]
+    }
+  },
+  {
+    "scheme_id": "SCH_71B14123",
+    "name": "Uttar Pradesh Old Age Pension Scheme",
+    "ministry": "Ministry of Rural Development",
+    "category": "Social Welfare",
+    "scheme_type": "pension",
+    "jurisdiction": "state",
+    "state_code": "UP",
+    "description_short": "The Uttar Pradesh Old Age Pension Scheme is a government scheme providing financial and/or administrative support to eligible beneficiaries. Eligible applicants can avail benefits by applying through the designated government portal or office.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": null,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": false,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": true,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": 46080,
+        "is_sc_st": false,
+        "has_bpl_card": true,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": false,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": true,
+        "is_lig": true,
+        "is_mig": false,
+        "is_woman": false,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "Benefits Monthly pension Rs. 1000/-."
+        }
+      ],
+      "documents_required": [
+        "List of the required documents Photograph. Income certificate. Age Certificate."
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Uttar Pradesh",
+        "Old Age",
+        "Pension Scheme"
+      ]
+    }
+  },
+  {
+    "scheme_id": "SCH_F4615BAF",
+    "name": "Double Bedroom Housing Scheme (2BHK Scheme)",
+    "ministry": "Ministry of Housing and Urban Affairs",
+    "category": "Agriculture",
+    "scheme_type": "subsidy",
+    "jurisdiction": "state",
+    "state_code": "TS",
+    "description_short": "The Double Bedroom Housing Scheme (2BHK Scheme) is a government scheme providing financial and/or administrative support to eligible beneficiaries. It targets SC/ST communities and economically weaker sections to promote inclusive development.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": null,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": false,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": true,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": null,
+        "is_sc_st": true,
+        "has_bpl_card": true,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": false,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": false,
+        "is_lig": false,
+        "is_mig": false,
+        "is_woman": false,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "The \"Double Bedroom Housing\", covering the 560 Sqft plinth area, provides one Master Bedroom (90 sq. ft), one Normal Bedroom (81 sq. ft), one Living Room (140 sq. ft), one Kitchen (36 sq. ft), one Toi"
+        }
+      ],
+      "documents_required": [
+        "PMAY/2BHK housing application (Available at Meeseva: Link ) Ration Card / Food Security Card Aadhar Card of Applicant and Family Members Voter ID card of the Applicant Community Certificate of Applicant Income Proof of Applicant Passport Size Photo Bank Passbook"
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Housing",
+        "Shelter"
+      ]
+    }
+  },
+  {
+    "scheme_id": "SCH_8673C3CF",
+    "name": "AGR 3 (Farm Mechanization) Scheme For ST Farmers",
+    "ministry": "Ministry of Agriculture & Farmers Welfare",
+    "category": "Agriculture",
+    "scheme_type": "subsidy",
+    "jurisdiction": "state",
+    "state_code": "GJ",
+    "description_short": "The AGR 3 (Farm Mechanization) Scheme For ST Farmers is a government scheme providing financial and/or administrative support to eligible beneficiaries. It primarily helps farmers and agricultural workers improve their livelihoods through subsidies and technical assistance.",
+    "eligibility_json": {
+      "must_match_all": {
+        "min_age": null,
+        "max_age": null,
+        "is_govt_employee": false,
+        "is_pregnant_or_lactating": false,
+        "is_farmer": true,
+        "owns_cultivable_land": false,
+        "is_taxpayer": false,
+        "is_pensioner_above_10k": false,
+        "no_pucca_house": false,
+        "rural_required": false,
+        "born_after": null,
+        "not_govt_employee": false
+      },
+      "must_match_one_of": {
+        "max_income": null,
+        "is_sc_st": true,
+        "has_bpl_card": false,
+        "has_eshram_card": false,
+        "is_mgnrega_worker": false,
+        "is_divyang": false,
+        "has_yellow_ration_card": false,
+        "has_orange_ration_card": false,
+        "has_business_plan": false,
+        "is_ews": false,
+        "is_lig": true,
+        "is_mig": false,
+        "is_woman": false,
+        "is_unorganized_worker": false
+      },
+      "benefits": [
+        {
+          "stage": "Main Benefit",
+          "amount": "The beneficiary will get financial assistance for the purchase of agricultural equipment/components such as Plant protection equipment, Tarpaulin, Field Demonstration, Micronutrients, Water carrying p"
+        }
+      ],
+      "documents_required": [
+        "Government-approved photo ID i.e. Aadhaar Card, Voter ID Card Basis (evidence) for land (if applicable) Caste Certificate (by competent authority) Disability Certificate from Competent Authority (only for disabled) (if applicable) Ration Card (if applicable) Bank account details Beneficiary's Undertaking/Consent Form"
+      ],
+      "warnings": [],
+      "deadlines": null,
+      "search_tags": [
+        "Agriculture",
+        "Farmer",
+        "Scheduled Tribe",
+        "Adivasi",
+        "Mechanization",
+        "Equipment",
+        "Financial Assistance"
+      ]
+    }
+  }
+]

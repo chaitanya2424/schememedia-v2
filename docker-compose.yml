@@ -1,0 +1,57 @@
+name: schememedia
+
+services:
+  postgres:
+    # pgvector is compiled in; the stock postgres image cannot CREATE EXTENSION vector.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-schememedia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-schememedia}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # The API waits for this, so startup order is deterministic.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-schememedia} -d ${POSTGRES_DB:-schememedia}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-schememedia}:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/${POSTGRES_DB:-schememedia}
+      APP_ENV: local
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_JSON: ${LOG_JSON:-false}
+      CORS_ORIGINS: http://localhost:3000
+      # Audit finding M1: these were never passed through, so the assistant
+      # silently broke under `docker-compose up` even with a fully
+      # configured root .env (Compose only auto-loads .env for substituting
+      # ${VAR} here -- it does not forward anything into the container that
+      # isn't explicitly listed). Values come from the same root .env
+      # native/dev setups already use; GEMINI_API_KEY/ANTHROPIC_API_KEY have
+      # no safe default and fall through empty if unset, same as unset.
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Live reload during development.
+      - ./apps/api/src:/app/src:ro
+    command: >
+      uvicorn schememedia.main:create_app --factory
+      --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src
+
+volumes:
+  postgres_data:

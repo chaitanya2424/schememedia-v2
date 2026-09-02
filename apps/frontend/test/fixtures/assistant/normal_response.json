@@ -1,0 +1,26 @@
+{
+  "reply": "Yes! Based on your profile, you appear eligible for the Biju Patnaik Sports Award for Excellence in Sports Journalism, which is open to SC/ST applicants. I don't have an official application link on file for this scheme, so I'd recommend checking the relevant sports ministry portal directly.",
+  "evidence": {
+    "query": "sports journalism award",
+    "profile_provided": true,
+    "total_returned": 1,
+    "eligibility_breakdown": {"pass": 1},
+    "results": [
+      {
+        "scheme_id": "SCH_1F47743B",
+        "name": "Biju Patnaik Sports Award for Excellence in Sports Journalism",
+        "category": "Sports & Culture",
+        "jurisdiction": "central",
+        "state_code": null,
+        "scheme_type": "subsidy",
+        "eligibility_state": "pass",
+        "eligibility_explanations": ["You belong to a Scheduled Caste or Scheduled Tribe"],
+        "missing_attributes": [],
+        "verification_status": "unverified",
+        "needs_review": false,
+        "official_url": null
+      }
+    ]
+  },
+  "grounding_warnings": []
+}

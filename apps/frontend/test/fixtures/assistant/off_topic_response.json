@@ -1,0 +1,11 @@
+{
+  "reply": "I am SchemeMedia's assistant and can only help with information regarding government welfare schemes. No matching schemes were found for your request—please rephrase or provide details about a government scheme, benefit, or subsidy you are looking for.",
+  "evidence": {
+    "query": "recipe for chocolate cake",
+    "profile_provided": false,
+    "total_returned": 0,
+    "eligibility_breakdown": {},
+    "results": []
+  },
+  "grounding_warnings": []
+}

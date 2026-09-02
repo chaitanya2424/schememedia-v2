@@ -1,0 +1,26 @@
+{
+  "reply": "You may be eligible for the Biju Patnaik Sports Award for Excellence in Sports Journalism. You can apply at https://totally-made-up.example.com/apply.",
+  "evidence": {
+    "query": "sports journalism award",
+    "profile_provided": true,
+    "total_returned": 1,
+    "eligibility_breakdown": {"pass": 1},
+    "results": [
+      {
+        "scheme_id": "SCH_1F47743B",
+        "name": "Biju Patnaik Sports Award for Excellence in Sports Journalism",
+        "category": "Sports & Culture",
+        "jurisdiction": "central",
+        "state_code": null,
+        "scheme_type": "subsidy",
+        "eligibility_state": "pass",
+        "eligibility_explanations": ["You belong to a Scheduled Caste or Scheduled Tribe"],
+        "missing_attributes": [],
+        "verification_status": "unverified",
+        "needs_review": false,
+        "official_url": null
+      }
+    ]
+  },
+  "grounding_warnings": ["fabricated or unsupported URL: https://totally-made-up.example.com/apply"]
+}

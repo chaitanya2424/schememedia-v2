@@ -1,0 +1,16 @@
+# Copy this file to android/key.properties and fill in real values to sign
+# release builds with a real release keystore instead of the debug key.
+# key.properties is git-ignored -- never commit it or the .jks/.keystore file
+# it points to.
+#
+# Generate a keystore first, if you don't have one:
+#   keytool -genkey -v -keystore ~/schememedia-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias schememedia
+#
+# See https://docs.flutter.dev/deployment/android#signing-the-app for the
+# full walkthrough.
+
+storePassword=REPLACE_ME
+keyPassword=REPLACE_ME
+keyAlias=schememedia
+storeFile=/absolute/path/to/schememedia-release.jks
