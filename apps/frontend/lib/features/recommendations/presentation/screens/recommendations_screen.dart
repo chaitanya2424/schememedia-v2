@@ -1,123 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/async_value_view.dart';
-import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
 import '../../domain/recommendation.dart';
-import '../providers/profile_form_provider.dart';
 import '../providers/recommendations_providers.dart';
-import '../widgets/attribute_groups.dart';
-import '../widgets/profile_form.dart';
-import '../widgets/profile_form_controller.dart';
 import '../widgets/recommendation_card.dart';
+import '../widgets/recommendations_wizard.dart';
 
-/// Derived from the same `kAttributeGroups` the form itself renders, not a
-/// hardcoded count that could drift if an attribute is ever added/removed.
-final _totalAttributes = kAttributeGroups.fold(0, (sum, g) => sum + g.attributes.length);
-
-/// Build-order step 4: profile form (26 optional attributes, grouped) +
-/// `POST /recommendations` + ranked, eligibility-annotated results. See the
-/// frontend architecture plan's Recommendations + eligibility explanations
-/// section.
-class RecommendationsScreen extends ConsumerStatefulWidget {
+/// Build-order step 4: `POST /recommendations`, real ranked/eligibility-
+/// annotated results. "Same to same" fidelity pass: the wizard (one
+/// question per screen -- see RecommendationsWizard) and the results view
+/// are now separate full-screen states, matching the reference mockups --
+/// not the v1 side-by-side form+results layout, which didn't give a
+/// step-by-step flow room to breathe. Still built on the same
+/// AsyncValueView every other screen uses, so error handling (message per
+/// ApiException variant, retry-ability) is the one shared implementation,
+/// not reinvented here.
+class RecommendationsScreen extends ConsumerWidget {
   const RecommendationsScreen({super.key});
 
   @override
-  ConsumerState<RecommendationsScreen> createState() => _RecommendationsScreenState();
-}
-
-class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen> {
-  final _queryController = TextEditingController();
-  String? _queryError;
-
-  @override
-  void dispose() {
-    _queryController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final query = _queryController.text.trim();
-    if (query.isEmpty) {
-      setState(() => _queryError = 'Enter what you\'re looking for, e.g. "farmer subsidy".');
-      return;
-    }
-    if (_queryError != null) setState(() => _queryError = null);
-    final formController = ref.read(profileFormControllerProvider);
-    final profile = formController.isEmpty ? null : formController.toProfileJson();
-    ref.read(recommendationsNotifierProvider.notifier).fetch(query: query, profile: profile);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(recommendationsNotifierProvider);
-    final formController = ref.watch(profileFormControllerProvider);
-    final wide = Breakpoints.of(context) == ScreenSize.wide;
-
-    final formPane = _FormPane(
-      queryController: _queryController,
-      queryError: _queryError,
-      formController: formController,
-      onSubmit: _submit,
-      loading: state.isLoading,
-    );
-
-    final resultsPane = AsyncValueView<RecommendationResponse?>(
-      value: state,
-      onRetry: _submit,
-      isEmpty: (r) => r != null && r.recommendations.isEmpty,
-      emptyBuilder: (context) => const EmptyState(
-        icon: Icons.search_off,
-        title: 'No schemes matched this search.',
-        subtitle: 'Try a different or more general term.',
-      ),
-      loadingBuilder: (context) => const _ResultsSkeleton(),
-      data: (context, response) {
-        if (response == null) {
-          return const _StartPrompt();
-        }
-        return _ResultsList(response: response);
-      },
-    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Recommendations')),
+      appBar: AppBar(title: const Text('For You')),
       body: SafeArea(
-        child: ResponsiveContainer(
-          maxWidth: wide ? AppSpacing.maxWideContentWidth : AppSpacing.maxContentWidth,
-          child: wide
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 380,
-                      child: SingleChildScrollView(padding: const EdgeInsets.all(AppSpacing.lg), child: formPane),
-                    ),
-                    const VerticalDivider(width: 1),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: resultsPane,
-                      ),
-                    ),
-                  ],
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      formPane,
-                      const SizedBox(height: AppSpacing.lg),
-                      const Divider(),
-                      const SizedBox(height: AppSpacing.md),
-                      resultsPane,
-                    ],
-                  ),
-                ),
+        child: AsyncValueView<RecommendationResponse?>(
+          value: state,
+          onRetry: () => ref.read(recommendationsNotifierProvider.notifier).retry(),
+          loadingBuilder: (context) => ResponsiveContainer(
+            child: const Padding(padding: EdgeInsets.all(AppSpacing.lg), child: _ResultsSkeleton()),
+          ),
+          data: (context, response) {
+            if (response == null) return const RecommendationsWizard();
+            return ResponsiveContainer(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: _ResultsView(response: response),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -141,118 +69,101 @@ class _ResultsSkeleton extends StatelessWidget {
   }
 }
 
-class _FormPane extends StatelessWidget {
-  const _FormPane({
-    required this.queryController,
-    required this.queryError,
-    required this.formController,
-    required this.onSubmit,
-    required this.loading,
-  });
-
-  final TextEditingController queryController;
-  final String? queryError;
-  final ProfileFormController formController;
-  final VoidCallback onSubmit;
-  final bool loading;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('What are you looking for?', style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.sm),
-        TextField(
-          key: const ValueKey('recommendations_query_field'),
-          controller: queryController,
-          decoration: InputDecoration(hintText: 'e.g. farmer subsidy, scholarship', errorText: queryError),
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => onSubmit(),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: Text('Tell us about yourself (optional)', style: theme.textTheme.titleMedium),
-            ),
-            ListenableBuilder(
-              listenable: formController,
-              builder: (context, _) => Text(
-                '${formController.totalAnswered} of $_totalAttributes answered',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        ListenableBuilder(
-          listenable: formController,
-          builder: (context, _) => ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            child: LinearProgressIndicator(
-              value: formController.totalAnswered / _totalAttributes,
-              minHeight: 4,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Every field below is optional. Answering more helps us tell you whether '
-          'you\'re actually eligible instead of "unknown".',
-          style: theme.textTheme.bodySmall,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ProfileForm(controller: formController),
-        const SizedBox(height: AppSpacing.md),
-        FilledButton(
-          key: const ValueKey('recommendations_submit_button'),
-          onPressed: loading ? null : onSubmit,
-          child: loading
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Show recommendations'),
-        ),
-      ],
-    );
-  }
-}
-
-class _ResultsList extends StatelessWidget {
-  const _ResultsList({required this.response});
+class _ResultsView extends ConsumerWidget {
+  const _ResultsView({required this.response});
 
   final RecommendationResponse response;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            const Expanded(child: EyebrowLabel('Personal recommendations')),
+            TextButton(
+              onPressed: () => ref.read(recommendationsNotifierProvider.notifier).reset(),
+              child: const Text('Edit answers'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text('Made for your next step.', style: theme.textTheme.headlineSmall),
+        const SizedBox(height: AppSpacing.xs),
         Text(
-          '${response.totalReturned} result${response.totalReturned == 1 ? '' : 's'} for "${response.query}"'
-          '${response.profileProvided ? ', ranked for your profile' : ''}',
+          "A considered shortlist from what you've told us. Nothing here is a promise of approval.",
           style: theme.textTheme.bodyMedium,
         ),
-        if (!response.profileProvided) ...[
-          const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.lg),
+        if (response.profileProvided)
+          _WhyTheseMatchesBanner(response: response)
+        else
           _InfoBanner(
             icon: Icons.info_outline,
             text: 'Add some profile details to see personalized eligibility instead of "unknown".',
           ),
-        ],
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(child: Text('Top matches', style: theme.textTheme.titleMedium)),
+            Text('Updated just now', style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
         for (final rec in response.recommendations)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: RecommendationCard(recommendation: rec),
           ),
       ],
+    );
+  }
+}
+
+/// "Why these matches?" -- real, templated from what the profile actually
+/// carried, not the mockup's literal hand-written sentence.
+class _WhyTheseMatchesBanner extends StatelessWidget {
+  const _WhyTheseMatchesBanner({required this.response});
+
+  final RecommendationResponse response;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final passLabels = response.recommendations
+        .expand((r) => r.eligibilityRules)
+        .where((r) => r.state.name == 'pass')
+        .map((r) => r.label)
+        .toSet()
+        .take(3)
+        .toList();
+    final body = passLabels.isEmpty
+        ? 'Your answers shaped how these results are ranked.'
+        : '${passLabels.join(', ')} shaped this list.';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(color: colors.brandTint, borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.auto_awesome, size: AppSpacing.iconMd, color: colors.brand),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Why these matches?', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+                Text(body, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -266,43 +177,20 @@ class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.4),
+        color: colors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: AppSpacing.iconMd, color: theme.colorScheme.onSecondaryContainer),
+          Icon(icon, size: AppSpacing.iconMd, color: colors.textSecondary),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
-            ),
-          ),
+          Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
         ],
-      ),
-    );
-  }
-}
-
-class _StartPrompt extends StatelessWidget {
-  const _StartPrompt();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Text(
-          'Tell us what you\'re looking for and, optionally, a bit about yourself, '
-          'then tap "Show recommendations".',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
       ),
     );
   }

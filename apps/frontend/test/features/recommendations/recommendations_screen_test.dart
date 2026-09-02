@@ -66,12 +66,24 @@ void main() {
     return container;
   }
 
+  /// Types the query, advances past the wizard's query step, then hits
+  /// "Skip all" (visible once past the query step) to reach results
+  /// without answering any of the 27 questions -- equivalent to v1's
+  /// single-submit-button flow. `FakeRecommendationsRepository` returns a
+  /// fixed canned response regardless of what profile was actually sent,
+  /// so skipping every question doesn't affect what these tests assert.
   Future<void> submit(WidgetTester tester, String query) async {
     await tester.enterText(find.byKey(const ValueKey('recommendations_query_field')), query);
-    final submitButton = find.byKey(const ValueKey('recommendations_submit_button'));
-    await tester.ensureVisible(submitButton);
+    final continueButton = find.byKey(const ValueKey('recommendations_wizard_continue_button'));
+    await tester.ensureVisible(continueButton);
     await tester.pumpAndSettle();
-    await tester.tap(submitButton);
+    await tester.tap(continueButton);
+    await tester.pumpAndSettle();
+
+    final skipAllButton = find.byKey(const ValueKey('recommendations_wizard_skip_all_button'));
+    await tester.ensureVisible(skipAllButton);
+    await tester.pumpAndSettle();
+    await tester.tap(skipAllButton);
     await tester.pumpAndSettle();
   }
 
@@ -158,10 +170,10 @@ void main() {
       final fake = FakeRecommendationsRepository(response: _loadFixture('empty_profile_response.json'));
       await pumpWithFake(tester, fake);
 
-      final submitButton = find.byKey(const ValueKey('recommendations_submit_button'));
-      await tester.ensureVisible(submitButton);
+      final continueButton = find.byKey(const ValueKey('recommendations_wizard_continue_button'));
+      await tester.ensureVisible(continueButton);
       await tester.pumpAndSettle();
-      await tester.tap(submitButton);
+      await tester.tap(continueButton);
       await tester.pump();
 
       expect(find.textContaining('Enter what you\'re looking for'), findsOneWidget);
