@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_shadows.dart';
 import '../theme/app_spacing.dart';
 
-/// The shared card shell every screen previously hand-rolled independently
-/// (`Card(InkWell(Padding(...)))`, duplicated 5x across `SchemeResultCard`,
-/// `RecommendationCard`, `EvidenceCard`, Home's quick-links, and
-/// Recommendations' group panels). Flat and outlined rather than
-/// shadow-elevated -- reads as calmer and more "official" than a
-/// shadow-heavy UI, matching the redesign's "trustworthy, not flashy"
-/// direction.
+/// The shared card shell every screen builds on. Redesign-v2: a soft
+/// navy-tinted shadow, no border -- the direct fix for v1's "outlined box
+/// on a grey background" dashboard feel. Built on a plain `Container` +
+/// `Material`/`InkWell`, not Material's `Card` widget, specifically to
+/// avoid `Card`'s automatic `surfaceTint` elevation overlay, which would
+/// otherwise wash a warm tint over the hand-picked surface color.
 ///
 /// [semanticLabel], when given, merges the whole card into one screen-reader
 /// announcement (e.g. a scheme's name + verification status read together)
@@ -18,7 +19,7 @@ class AppCard extends StatelessWidget {
     super.key,
     required this.child,
     this.onTap,
-    this.padding = const EdgeInsets.all(AppSpacing.lg),
+    this.padding = const EdgeInsets.all(AppSpacing.xl),
     this.semanticLabel,
     this.filled = false,
   });
@@ -29,24 +30,28 @@ class AppCard extends StatelessWidget {
   final String? semanticLabel;
 
   /// True for a saffron-tinted "primary" card (e.g. Home's highest-priority
-  /// quick link) instead of the default neutral-outlined surface.
+  /// quick link) instead of the default neutral white surface.
   final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final card = Card(
-      margin: EdgeInsets.zero,
-      color: filled ? scheme.primaryContainer : scheme.surface,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        side: filled ? BorderSide.none : BorderSide(color: scheme.outlineVariant),
+    final colors = context.colors;
+    final radius = BorderRadius.circular(AppSpacing.radiusMd);
+
+    final card = Container(
+      decoration: BoxDecoration(
+        color: filled ? colors.brandTint : colors.surface,
+        borderRadius: radius,
+        boxShadow: AppShadows.card(colors.shadow),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: onTap == null
-          ? Padding(padding: padding, child: child)
-          : InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: onTap == null
+            ? Padding(padding: padding, child: child)
+            : InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
+      ),
     );
 
     if (semanticLabel == null) return card;

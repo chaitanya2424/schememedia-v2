@@ -8,10 +8,14 @@ abstract final class AppSpacing {
   static const double xl = 24;
   static const double xxl = 32;
 
-  static const double radiusSm = 8;
-  static const double radiusMd = 12;
-  static const double radiusLg = 16;
-  static const double radiusXl = 24;
+  // Redesign v2: a notch more generous than v1's (10/12/16) -- part of the
+  // "friendlier, more premium" direction; see the redesign spec's
+  // Elevation/radii/shadows section.
+  static const double radiusSm = 10;
+  static const double radiusMd = 16;
+  static const double radiusLg = 22;
+  static const double radiusXl = 28;
+  static const double radiusPill = 999;
 
   static const double iconSm = 16;
   static const double iconMd = 20;
