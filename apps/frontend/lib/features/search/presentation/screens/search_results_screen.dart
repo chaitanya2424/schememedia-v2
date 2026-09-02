@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/async_value_view.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/responsive.dart';
+import '../../../../core/widgets/skeleton_loader.dart';
 import '../../domain/scheme_summary.dart';
 import '../providers/search_providers.dart';
 import '../widgets/scheme_result_card.dart';
@@ -50,8 +52,11 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         title: TextField(
           controller: _controller,
           textInputAction: TextInputAction.search,
+          // Previously had no icon at all, unlike Home's search box for
+          // "the same kind of control" -- restyled to match.
           decoration: const InputDecoration(
             hintText: 'Search schemes',
+            prefixIcon: Icon(Icons.search),
             border: InputBorder.none,
           ),
           onSubmitted: _runSearch,
@@ -63,7 +68,12 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             value: state,
             onRetry: () => _runSearch(_controller.text),
             isEmpty: (response) => response != null && response.results.isEmpty,
-            emptyBuilder: (context) => const _EmptyResults(),
+            emptyBuilder: (context) => const EmptyState(
+              icon: Icons.search_off,
+              title: 'No schemes matched this search.',
+              subtitle: 'Try a different or more general term.',
+            ),
+            loadingBuilder: (context) => const _SearchSkeleton(),
             data: (context, response) {
               if (response == null) {
                 return const Center(child: Text('Search for a scheme to get started.'));
@@ -73,6 +83,19 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SearchSkeleton extends StatelessWidget {
+  const _SearchSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      itemCount: 6,
+      itemBuilder: (context, index) => const SkeletonListTile(),
     );
   }
 }
@@ -88,7 +111,12 @@ class _ResultsList extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.xs,
+          ),
           sliver: SliverToBoxAdapter(
             child: Text(
               '${response.totalReturned} result${response.totalReturned == 1 ? '' : 's'} for "${response.query}"',
@@ -96,6 +124,16 @@ class _ResultsList extends StatelessWidget {
             ),
           ),
         ),
+        if (response.verificationBreakdown.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
+            sliver: SliverToBoxAdapter(child: _VerificationBreakdownLine(response)),
+          ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           sliver: wide
@@ -104,7 +142,7 @@ class _ResultsList extends StatelessWidget {
                     maxCrossAxisExtent: 400,
                     mainAxisSpacing: AppSpacing.md,
                     crossAxisSpacing: AppSpacing.md,
-                    mainAxisExtent: 180,
+                    mainAxisExtent: 190,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => _resultCard(context, response.results[index]),
@@ -134,31 +172,33 @@ class _ResultsList extends StatelessWidget {
   }
 }
 
-class _EmptyResults extends StatelessWidget {
-  const _EmptyResults();
+/// Already fetched from the API but previously never rendered -- displaying
+/// it is completing an already-designed-for UI treatment, not adding new
+/// filter behavior (it stays non-interactive).
+class _VerificationBreakdownLine extends StatelessWidget {
+  const _VerificationBreakdownLine(this.response);
+
+  final SearchResponse response;
+
+  static const _labels = {
+    'officially_verified': 'officially verified',
+    'source_provided': 'source provided',
+    'unverified': 'unverified',
+  };
 
   @override
   Widget build(BuildContext context) {
-    // The backend is honest about a genuine zero-result search; the UI
-    // should be too, not imply a bug -- see the frontend architecture plan.
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_off, size: 40, color: Theme.of(context).colorScheme.outline),
-            const SizedBox(height: AppSpacing.md),
-            const Text('No schemes matched this search.', textAlign: TextAlign.center),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Try a different or more general term.',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    final parts = _labels.entries
+        .map((e) => (count: response.verificationBreakdown[e.key] ?? 0, label: e.value))
+        .where((p) => p.count > 0)
+        .map((p) => '${p.count} ${p.label}')
+        .join(' · ');
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Text(
+      parts,
+      style: Theme.of(
+        context,
+      ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.outline),
     );
   }
 }

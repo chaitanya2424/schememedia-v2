@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../network/api_exception.dart';
+import '../theme/app_spacing.dart';
 
 /// The one shared loading/error/empty/data renderer for `AsyncValue<T>` --
 /// what makes loading/error handling actually consistent across every
@@ -15,6 +16,7 @@ class AsyncValueView<T> extends StatelessWidget {
     this.onRetry,
     this.isEmpty,
     this.emptyBuilder,
+    this.loadingBuilder,
   });
 
   final AsyncValue<T> value;
@@ -22,6 +24,13 @@ class AsyncValueView<T> extends StatelessWidget {
   final VoidCallback? onRetry;
   final bool Function(T data)? isEmpty;
   final WidgetBuilder? emptyBuilder;
+
+  /// A content-shaped skeleton for this screen's loading state (e.g. a
+  /// list of row skeletons for a results list). Defaults to a bare spinner
+  /// when not given -- a skeleton reads as "this is loading real content"
+  /// where a spinner alone reads as unfinished; not every screen needs one
+  /// (an inline retry spot, for instance, is fine as a plain spinner).
+  final WidgetBuilder? loadingBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +41,14 @@ class AsyncValueView<T> extends StatelessWidget {
         }
         return data(context, loaded);
       },
-      loading: () => const Center(
-        child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          loadingBuilder?.call(context) ??
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.xxl),
+              child: CircularProgressIndicator(),
+            ),
+          ),
       error: (error, stackTrace) => _ErrorView(error: error, onRetry: onRetry),
     );
   }
@@ -52,15 +66,15 @@ class _ErrorView extends StatelessWidget {
     final (message, canRetry) = _describe(error);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, color: theme.colorScheme.error, size: 40),
-            const SizedBox(height: 12),
+            Icon(Icons.error_outline, color: theme.colorScheme.error, size: AppSpacing.iconXl),
+            const SizedBox(height: AppSpacing.md),
             Text(message, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
             if (onRetry != null && canRetry) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               FilledButton(onPressed: onRetry, child: const Text('Retry')),
             ],
           ],
