@@ -35,6 +35,11 @@ class ProfileFormController extends ChangeNotifier {
 
   bool get isEmpty => _answers.isEmpty;
 
+  /// Answered attributes across every group -- drives the form's overall
+  /// "N of 27 answered" progress indicator (computed client-side, no
+  /// backend change).
+  int get totalAnswered => _answers.length;
+
   /// The wire-format profile map -- only answered keys, ready to send as
   /// `/recommendations`'s `profile` field.
   Map<String, dynamic> toProfileJson() => {

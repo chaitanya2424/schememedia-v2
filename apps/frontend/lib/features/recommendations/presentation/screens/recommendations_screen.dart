@@ -3,12 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/async_value_view.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/responsive.dart';
+import '../../../../core/widgets/skeleton_loader.dart';
 import '../../domain/recommendation.dart';
 import '../providers/recommendations_providers.dart';
+import '../widgets/attribute_groups.dart';
 import '../widgets/profile_form.dart';
 import '../widgets/profile_form_controller.dart';
 import '../widgets/recommendation_card.dart';
+
+/// Derived from the same `kAttributeGroups` the form itself renders, not a
+/// hardcoded count that could drift if an attribute is ever added/removed.
+final _totalAttributes = kAttributeGroups.fold(0, (sum, g) => sum + g.attributes.length);
 
 /// Build-order step 4: profile form (26 optional attributes, grouped) +
 /// `POST /recommendations` + ranked, eligibility-annotated results. See the
@@ -61,7 +68,12 @@ class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen> {
       value: state,
       onRetry: _submit,
       isEmpty: (r) => r != null && r.recommendations.isEmpty,
-      emptyBuilder: (context) => const _EmptyResults(),
+      emptyBuilder: (context) => const EmptyState(
+        icon: Icons.search_off,
+        title: 'No schemes matched this search.',
+        subtitle: 'Try a different or more general term.',
+      ),
+      loadingBuilder: (context) => const _ResultsSkeleton(),
       data: (context, response) {
         if (response == null) {
           return const _StartPrompt();
@@ -74,7 +86,7 @@ class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen> {
       appBar: AppBar(title: const Text('Recommendations')),
       body: SafeArea(
         child: ResponsiveContainer(
-          maxWidth: wide ? 1100 : 840,
+          maxWidth: wide ? AppSpacing.maxWideContentWidth : AppSpacing.maxContentWidth,
           child: wide
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,6 +117,23 @@ class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen> {
                     ],
                   ),
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultsSkeleton extends StatelessWidget {
+  const _ResultsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(
+        3,
+        (_) => const Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.md),
+          child: SkeletonListTile(),
         ),
       ),
     );
@@ -142,8 +171,33 @@ class _FormPane extends StatelessWidget {
           onSubmitted: (_) => onSubmit(),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text('Tell us about yourself (optional)', style: theme.textTheme.titleMedium),
+        Row(
+          children: [
+            Expanded(
+              child: Text('Tell us about yourself (optional)', style: theme.textTheme.titleMedium),
+            ),
+            ListenableBuilder(
+              listenable: formController,
+              builder: (context, _) => Text(
+                '${formController.totalAnswered} of $_totalAttributes answered',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.xs),
+        ListenableBuilder(
+          listenable: formController,
+          builder: (context, _) => ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+            child: LinearProgressIndicator(
+              value: formController.totalAnswered / _totalAttributes,
+              minHeight: 4,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           'Every field below is optional. Answering more helps us tell you whether '
           'you\'re actually eligible instead of "unknown".',
@@ -185,10 +239,10 @@ class _ResultsList extends StatelessWidget {
           style: theme.textTheme.bodyMedium,
         ),
         if (!response.profileProvided) ...[
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Add some profile details to see personalized eligibility instead of "unknown".',
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+          const SizedBox(height: AppSpacing.sm),
+          _InfoBanner(
+            icon: Icons.info_outline,
+            text: 'Add some profile details to see personalized eligibility instead of "unknown".',
           ),
         ],
         const SizedBox(height: AppSpacing.md),
@@ -198,6 +252,38 @@ class _ResultsList extends StatelessWidget {
             child: RecommendationCard(recommendation: rec),
           ),
       ],
+    );
+  }
+}
+
+class _InfoBanner extends StatelessWidget {
+  const _InfoBanner({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: AppSpacing.iconMd, color: theme.colorScheme.onSecondaryContainer),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -215,33 +301,6 @@ class _StartPrompt extends StatelessWidget {
           'then tap "Show recommendations".',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyResults extends StatelessWidget {
-  const _EmptyResults();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_off, size: 40, color: Theme.of(context).colorScheme.outline),
-            const SizedBox(height: AppSpacing.md),
-            const Text('No schemes matched this search.', textAlign: TextAlign.center),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Try a different or more general term.',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
         ),
       ),
     );

@@ -36,11 +36,26 @@ class _GroupPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final answered = group.attributes.where((a) => controller.valueOf(a) != null).length;
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: ExpansionTile(
-        title: Text(group.title),
+        title: Row(
+          children: [
+            Expanded(child: Text(group.title)),
+            // A stronger "never forced" signal than the form's one static
+            // paragraph of copy alone -- every section says so itself.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+              child: Text('Optional', style: theme.textTheme.labelSmall),
+            ),
+          ],
+        ),
         subtitle: answered > 0 ? Text('$answered answered') : null,
         childrenPadding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
         children: [for (final attribute in group.attributes) _FieldFor(attribute: attribute, controller: controller)],
@@ -96,8 +111,13 @@ class _NumericFieldState extends State<_NumericField> {
 
   @override
   Widget build(BuildContext context) {
+    // Previously silently discarded unparseable input as "not answered",
+    // with no error shown -- e.g. "12.3.4" (multiple dots still pass the
+    // digits-and-dots input formatter) parsed to null and vanished.
+    final text = _textController.text;
+    final hasError = text.isNotEmpty && double.tryParse(text) == null;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs + 2),
       child: TextField(
         key: ValueKey('field_${widget.attribute.wireKey}'),
         controller: _textController,
@@ -106,7 +126,8 @@ class _NumericFieldState extends State<_NumericField> {
         decoration: InputDecoration(
           labelText: attributeLabel(widget.attribute),
           isDense: true,
-          suffixIcon: _textController.text.isEmpty
+          errorText: hasError ? 'Enter a valid number' : null,
+          suffixIcon: text.isEmpty
               ? null
               : IconButton(
                   icon: const Icon(Icons.clear, size: 18),
@@ -120,7 +141,7 @@ class _NumericFieldState extends State<_NumericField> {
         ),
         onChanged: (text) {
           widget.controller.setNumeric(widget.attribute, double.tryParse(text));
-          setState(() {}); // refresh clear-icon visibility
+          setState(() {}); // refresh clear-icon visibility + error text
         },
       ),
     );
@@ -151,7 +172,7 @@ class _TextFieldState extends State<_TextField> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs + 2),
       child: TextField(
         key: ValueKey('field_${widget.attribute.wireKey}'),
         controller: _textController,
