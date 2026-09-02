@@ -86,7 +86,9 @@ void main() {
       expect(find.text(name), findsOneWidget);
 
       final card = find.ancestor(of: find.text(name), matching: find.byType(RecommendationCard));
-      expect(find.descendant(of: card, matching: find.text('Eligible')), findsOneWidget);
+      // Redesign-v2 wording (matches reference mockups): "Likely eligible",
+      // not a bare "Eligible" -- more honest about a rule-based match.
+      expect(find.descendant(of: card, matching: find.text('Likely eligible')), findsOneWidget);
       expect(find.descendant(of: card, matching: find.byType(VerificationBadge)), findsOneWidget);
 
       final whyButton = find.descendant(of: card, matching: find.textContaining('Why?'));

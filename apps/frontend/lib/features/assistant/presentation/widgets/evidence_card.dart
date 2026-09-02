@@ -4,22 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/status_colors.dart';
-import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/eligibility_state_badge.dart';
-import '../../../../core/widgets/verification_badge.dart';
+import '../../../../core/widgets/scheme_card.dart';
 import '../../domain/assistant_evidence.dart';
 
-/// One evidence/source entry backing an assistant reply -- deliberately
-/// not a reuse of `SchemeResultCard` (search's card): `EvidenceResultOut`
-/// is a different wire shape (no slug, no score, no description; it does
-/// carry eligibility_state/explanations/missing_attributes, which search
-/// results never do). Matches SchemeResultCard's visual language exactly
-/// (same spacing tokens, same Card/InkWell-to-detail pattern) and reuses
-/// its actual shared sub-components (VerificationBadge,
-/// EligibilityStateBadge) -- the real "existing scheme-card component"
-/// this app has to share across a search result and an evidence result is
-/// those badges, not a single monolithic card that would otherwise have to
-/// paper over the field mismatch with synthetic data.
+/// One evidence/source entry backing an assistant reply -- maps onto the
+/// shared [SchemeCard], with the expandable eligibility-explanation/
+/// missing-attributes list as [SchemeCard.trailing]. Deliberately not a
+/// reuse of `SchemeResultCard` (search's mapping) at the *data* layer --
+/// `EvidenceResultOut` is a different wire shape (no slug, no score, no
+/// description; it does carry eligibility_state/explanations/
+/// missing_attributes, which search results never do) -- but both map
+/// onto the same shared card shell, which is the actual "reuse" that
+/// matters visually.
 class EvidenceCard extends StatefulWidget {
   const EvidenceCard({super.key, required this.evidence});
 
@@ -35,52 +31,59 @@ class _EvidenceCardState extends State<EvidenceCard> {
   @override
   Widget build(BuildContext context) {
     final e = widget.evidence;
-    final theme = Theme.of(context);
     final hasDetails = e.eligibilityExplanations.isNotEmpty || e.missingAttributes.isNotEmpty;
 
-    return AppCard(
+    return SchemeCard(
+      schemeId: e.schemeId,
+      name: e.name,
+      category: e.category,
+      verificationStatus: e.verificationStatus,
+      needsReview: e.needsReview,
+      eligibilityState: e.eligibilityState,
       onTap: () => context.push(AppRoutes.schemeDetailPath(e.schemeId)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(e.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              EligibilityStateBadge(state: e.eligibilityState),
-            ],
-          ),
-          if (e.category != null) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(e.category!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
-          ],
-          const SizedBox(height: AppSpacing.sm),
-          VerificationBadge(status: e.verificationStatus, needsReview: e.needsReview),
-          if (hasDetails) ...[
-            const SizedBox(height: AppSpacing.xs),
-            TextButton.icon(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(_expanded ? 'Hide details' : 'Why this scheme?'),
+      ctaLabel: 'View details',
+      trailing: !hasDetails
+          ? null
+          : _DetailsSection(
+              evidence: e,
+              expanded: _expanded,
+              onToggle: () => setState(() => _expanded = !_expanded),
             ),
-            if (_expanded) ...[
-              const Divider(height: 1),
-              const SizedBox(height: AppSpacing.xs),
-              for (final explanation in e.eligibilityExplanations)
-                _Bullet(icon: Icons.check_circle_outline, text: explanation, color: theme.colorScheme.primary),
-              if (e.missingAttributes.isNotEmpty)
-                _Bullet(
-                  icon: Icons.help_outline,
-                  text: 'Still unknown: ${e.missingAttributes.join(', ')}',
-                  color: StatusColors.warning(theme.colorScheme),
-                ),
-            ],
-          ],
+    );
+  }
+}
+
+class _DetailsSection extends StatelessWidget {
+  const _DetailsSection({required this.evidence, required this.expanded, required this.onToggle});
+
+  final EvidenceResult evidence;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextButton.icon(
+          onPressed: onToggle,
+          icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+          label: Text(expanded ? 'Hide details' : 'Why this scheme?'),
+        ),
+        if (expanded) ...[
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.xs),
+          for (final explanation in evidence.eligibilityExplanations)
+            _Bullet(icon: Icons.check_circle_outline, text: explanation, color: theme.colorScheme.primary),
+          if (evidence.missingAttributes.isNotEmpty)
+            _Bullet(
+              icon: Icons.help_outline,
+              text: 'Still unknown: ${evidence.missingAttributes.join(', ')}',
+              color: StatusColors.warning(theme.colorScheme),
+            ),
         ],
-      ),
+      ],
     );
   }
 }

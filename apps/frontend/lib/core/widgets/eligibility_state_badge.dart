@@ -32,7 +32,10 @@ class EligibilityStateBadge extends StatelessWidget {
   };
 
   String _label(EligibilityState state) => switch (state) {
-    EligibilityState.pass => 'Eligible',
+    // "Likely eligible", not a bare "Eligible" -- redesign-v2 wording
+    // (from the reference mockups), and more honest: this is a rule-based
+    // match against a possibly-incomplete profile, never a guarantee.
+    EligibilityState.pass => 'Likely eligible',
     EligibilityState.fail => 'Not eligible',
     EligibilityState.unknown => 'Unknown',
     EligibilityState.notApplicable => 'Not applicable',

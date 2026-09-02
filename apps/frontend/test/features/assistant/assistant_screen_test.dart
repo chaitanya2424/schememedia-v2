@@ -154,7 +154,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(EvidenceCard), findsOneWidget);
-      expect(find.text('Eligible'), findsOneWidget); // EligibilityStateBadge for eligibility_state: pass
+      // Redesign-v2 wording (matches reference mockups): "Likely eligible",
+      // not a bare "Eligible" -- more honest about a rule-based match.
+      expect(find.text('Likely eligible'), findsOneWidget); // EligibilityStateBadge for eligibility_state: pass
       expect(find.text('Unverified'), findsOneWidget); // VerificationBadge for verification_status: unverified
 
       final whyButton = find.textContaining('Why this scheme?');

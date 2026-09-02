@@ -5,19 +5,18 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/status_colors.dart';
-import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/eligibility_state_badge.dart';
+import '../../../../core/widgets/scheme_card.dart';
 import '../../../../core/widgets/status_pill.dart';
-import '../../../../core/widgets/verification_badge.dart';
 import '../../domain/recommendation.dart';
 
-/// One ranked recommendation: scheme summary + eligibility state + every
-/// per-rule explanation, including `unknown` rules -- the "missing
+/// One ranked recommendation: maps onto the shared [SchemeCard], with the
+/// per-rule explanation list (including `unknown` rules -- the "missing
 /// information" a fuller profile could still resolve, since the backend
-/// doesn't ship a separate missing-attributes list on this endpoint (only
-/// the assistant's evidence does). `fail` results stay visible, just
-/// visually muted -- matching the backend's own "ranks, never filters"
-/// design; see the frontend architecture plan.
+/// doesn't ship a separate missing-attributes list on this endpoint, only
+/// the assistant's evidence does) as [SchemeCard.trailing]. `fail` results
+/// stay visible, just visually muted via [Opacity] -- matching the
+/// backend's own "ranks, never filters" design; see the frontend
+/// architecture plan.
 class RecommendationCard extends StatefulWidget {
   const RecommendationCard({super.key, required this.recommendation});
 
@@ -33,76 +32,68 @@ class _RecommendationCardState extends State<RecommendationCard> {
   @override
   Widget build(BuildContext context) {
     final rec = widget.recommendation;
-    final theme = Theme.of(context);
     final muted = rec.eligibilityState == EligibilityState.fail;
-    final unknownCount = rec.eligibilityRules
-        .where((r) => r.state == EligibilityState.unknown)
-        .length;
 
     return Opacity(
       opacity: muted ? 0.6 : 1,
-      child: AppCard(
+      child: SchemeCard(
+        schemeId: rec.schemeId,
+        name: rec.name,
+        category: rec.category,
+        description: rec.descriptionShort,
+        verificationStatus: rec.verificationStatus,
+        needsReview: rec.needsReview,
+        eligibilityState: rec.eligibilityState,
         onTap: () => context.push(AppRoutes.schemeDetailPath(rec.schemeId)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        ctaLabel: 'See eligibility',
+        trailing: rec.eligibilityRules.isEmpty
+            ? null
+            : _RuleSection(
+                rules: rec.eligibilityRules,
+                expanded: _expanded,
+                onToggle: () => setState(() => _expanded = !_expanded),
+              ),
+      ),
+    );
+  }
+}
+
+class _RuleSection extends StatelessWidget {
+  const _RuleSection({required this.rules, required this.expanded, required this.onToggle});
+
+  final List<EligibilityRule> rules;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final unknownCount = rules.where((r) => r.state == EligibilityState.unknown).length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AppSpacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    rec.name,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                EligibilityStateBadge(state: rec.eligibilityState),
-              ],
+            TextButton.icon(
+              onPressed: onToggle,
+              icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+              label: Text(expanded ? 'Hide eligibility details' : 'Why? (${rules.length})'),
             ),
-            if (rec.category != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                rec.category!,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+            if (unknownCount > 0)
+              StatusPill(
+                icon: Icons.help_outline,
+                label: '$unknownCount unknown',
+                color: Theme.of(context).colorScheme.tertiary,
               ),
-            ],
-            if (rec.descriptionShort != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(rec.descriptionShort!, maxLines: 2, overflow: TextOverflow.ellipsis),
-            ],
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                VerificationBadge(status: rec.verificationStatus, needsReview: rec.needsReview),
-                if (unknownCount > 0)
-                  StatusPill(
-                    icon: Icons.help_outline,
-                    label: '$unknownCount unknown',
-                    color: theme.colorScheme.tertiary,
-                  ),
-              ],
-            ),
-            if (rec.eligibilityRules.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xs),
-              TextButton.icon(
-                onPressed: () => setState(() => _expanded = !_expanded),
-                icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-                label: Text(
-                  _expanded ? 'Hide eligibility details' : 'Why? (${rec.eligibilityRules.length})',
-                ),
-              ),
-              if (_expanded) ...[
-                const Divider(height: 1),
-                const SizedBox(height: AppSpacing.xs),
-                for (final rule in rec.eligibilityRules) _RuleExplanation(rule: rule),
-              ],
-            ],
           ],
         ),
-      ),
+        if (expanded) ...[
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.xs),
+          for (final rule in rules) _RuleExplanation(rule: rule),
+        ],
+      ],
     );
   }
 }
