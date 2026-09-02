@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_spacing.dart';
+
 /// Standard Material breakpoints, centralized here -- no per-screen ad hoc
 /// `MediaQuery` checks. See the frontend architecture plan's Responsive
 /// layout strategy section.
@@ -20,7 +22,11 @@ abstract final class Breakpoints {
 /// Caps content width on wide screens (~840px, centered) so search/detail
 /// text doesn't stretch edge-to-edge on desktop web.
 class ResponsiveContainer extends StatelessWidget {
-  const ResponsiveContainer({super.key, required this.child, this.maxWidth = 840});
+  const ResponsiveContainer({
+    super.key,
+    required this.child,
+    this.maxWidth = AppSpacing.maxContentWidth,
+  });
 
   final Widget child;
   final double maxWidth;
