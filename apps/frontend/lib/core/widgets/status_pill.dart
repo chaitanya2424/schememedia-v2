@@ -34,7 +34,12 @@ class StatusPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            // 15%, not 12% -- a touch more saturated to match the
+            // reference mockups' pills, which read more visible than a
+            // bare 12% tint renders. Text-vs-page-surface contrast (what
+            // status_colors_test.dart audits) is unaffected -- only the
+            // pill's own translucent background tint changed.
+            color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
           ),
           child: Row(

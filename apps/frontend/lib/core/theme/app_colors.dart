@@ -65,15 +65,18 @@ class AppColors extends ThemeExtension<AppColors> {
     background: Color(0xFFF8F7F4),
     surface: Color(0xFFFFFFFF),
     surfaceMuted: Color(0xFFF1EFEA),
-    textPrimary: Color(0xFF1A1D24),
+    // A blue-leaning navy, not a neutral charcoal -- re-matched against
+    // the reference mockups' headline/hero-card/button ink, which reads
+    // distinctly blue, not grey-black.
+    textPrimary: Color(0xFF151A2E),
     textSecondary: Color(0xFF5C6270),
     textTertiary: Color(0xFF9BA1AC),
     divider: Color(0xFFEAE7E1),
     brand: Color(0xFFEA580C),
-    brandTint: Color(0x1AEA580C),
-    primaryAction: Color(0xFF1A1D24),
+    brandTint: Color(0x26EA580C),
+    primaryAction: Color(0xFF151A2E),
     onPrimaryAction: Colors.white,
-    shadow: Color(0xFF1A1D24),
+    shadow: Color(0xFF151A2E),
   );
 
   static const dark = AppColors(
