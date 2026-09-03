@@ -399,7 +399,7 @@ ANTHROPIC_AVAILABLE = bool(os.environ.get("ANTHROPIC_API_KEY"))
     reason="GEMINI_API_KEY/GOOGLE_API_KEY not set; live Gemini test skipped",
 )
 def test_assistant_turn_is_grounded_with_real_gemini(recommendation_service) -> None:
-    from google.genai.errors import ClientError
+    from google.genai.errors import ClientError, ServerError
 
     from schememedia.services.providers.gemini_provider import GeminiProvider
 
@@ -411,15 +411,37 @@ def test_assistant_turn_is_grounded_with_real_gemini(recommendation_service) -> 
             "I'm SC/ST, are there any sports or journalism awards for me?",
         )
     except ClientError as exc:
-        # gemini-3.6-flash's free tier is 20 requests/DAY per project
-        # (confirmed by direct diagnosis, not assumed) -- easy to exhaust
-        # during a day of live-testing this exact call. A 429/
-        # RESOURCE_EXHAUSTED here is a real, expected quota limit, not a
-        # regression in this code -- see assistant.py's route for how a
-        # caller sees this (a clean 503, never this raw exception).
-        if "RESOURCE_EXHAUSTED" in str(exc):
+        # A 4xx from Gemini is normally this app's own fault (a malformed
+        # request, bad auth) -- RESOURCE_EXHAUSTED is the one documented
+        # exception: gemini-3.6-flash's free tier is 20 requests/DAY per
+        # project (confirmed by direct diagnosis, not assumed), easy to
+        # exhaust during a day of live-testing this exact call. A real,
+        # expected quota limit, not a regression -- see assistant.py's
+        # route for how a caller sees this (a clean 503, never this raw
+        # exception). `.code`/`.status` are the SDK's own structured
+        # fields (google.genai.errors.APIError), not a string match
+        # against exc's repr. Anything else re-raises: this test must fail
+        # loudly on a genuine application regression, not swallow it as
+        # "probably Gemini's fault".
+        if exc.code == 429 and exc.status == "RESOURCE_EXHAUSTED":
             pytest.skip(f"Gemini free-tier quota exhausted for today: {exc}")
         raise
+    except ServerError as exc:
+        # A 5xx here is Google's own infrastructure reporting a fault --
+        # observed live as both 503 UNAVAILABLE ("This model is currently
+        # experiencing high demand") and 504 DEADLINE_EXCEEDED (the
+        # request timed out on Google's own side, not this app's 30s
+        # client-side budget -- see gemini_provider.py's DEFAULT_TIMEOUT_MS
+        # -- a client-side timeout would surface as an httpx exception, not
+        # an APIError at all). The SDK's own class hierarchy already draws
+        # this exact line (ClientError = 4xx = normally this app's fault,
+        # ServerError = 5xx = the provider's own fault -- see
+        # google.genai.errors.raise_error), so treating ServerError as a
+        # whole as "externally caused" is the SDK-authoritative boundary,
+        # not an arbitrary catch-all -- nothing in this codebase can make
+        # Gemini's own infrastructure available, and retrying later is the
+        # only remedy, exactly like the quota case above.
+        pytest.skip(f"Gemini API server-side error ({exc.code} {exc.status}): {exc}")
     assert result.reply_text
     assert result.grounding_warnings == []
     assert "results" in result.evidence
