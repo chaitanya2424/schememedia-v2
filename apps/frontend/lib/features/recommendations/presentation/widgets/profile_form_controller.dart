@@ -45,4 +45,27 @@ class ProfileFormController extends ChangeNotifier {
   Map<String, dynamic> toProfileJson() => {
     for (final entry in _answers.entries) entry.key.wireKey: entry.value,
   };
+
+  /// Replaces the in-progress answers with `attributes` (keyed the same
+  /// way `toProfileJson()` produces them) -- used to prefill the wizard
+  /// from a signed-in user's persisted profile (GET /me/profile) so a
+  /// returning user doesn't have to re-answer everything. A null/absent
+  /// value for a key stays unanswered; a value of the wrong type for its
+  /// attribute is skipped rather than stored malformed.
+  void loadFrom(Map<String, dynamic> attributes) {
+    _answers.clear();
+    for (final attribute in EligibilityAttribute.values) {
+      final value = attributes[attribute.wireKey];
+      if (value == null) continue;
+      switch (attribute.kind) {
+        case AttributeKind.boolean:
+          if (value is bool) _answers[attribute] = value;
+        case AttributeKind.numeric:
+          if (value is num) _answers[attribute] = value.toDouble();
+        case AttributeKind.text:
+          if (value is String && value.isNotEmpty) _answers[attribute] = value;
+      }
+    }
+    notifyListeners();
+  }
 }

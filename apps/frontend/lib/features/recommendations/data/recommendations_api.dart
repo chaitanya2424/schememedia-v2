@@ -22,4 +22,20 @@ class RecommendationsApi {
     );
     return RecommendationResponse.fromJson(json as Map<String, dynamic>);
   }
+
+  /// `POST /recommendations/me` -- no `profile` field at all: the backend
+  /// always ranks against the signed-in caller's own persisted profile
+  /// (see /me/profile), never one supplied here. Requires the caller to
+  /// already be signed in (ApiClient attaches the access token
+  /// automatically when one is cached -- see core/network/api_client.dart).
+  Future<RecommendationResponse> getMyRecommendations({
+    required String query,
+    int limit = 20,
+  }) async {
+    final json = await _client.post(
+      '/recommendations/me',
+      data: {'query': query, 'limit': limit},
+    );
+    return RecommendationResponse.fromJson(json as Map<String, dynamic>);
+  }
 }

@@ -8,14 +8,19 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../auth/domain/auth_models.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../providers/profile_providers.dart';
 
-/// A full product screen, not a settings page -- but honest: there is no
-/// backend auth (no signup/login/session endpoints exist), so this is
-/// always the signed-out state, never a fabricated "Riya Shah" account.
-/// See the redesign plan's Phase A/B capability table for exactly which
-/// pieces below are real (theme preference, saved-schemes count -- both
-/// local) vs. inert pending an account (sign-in, notification/language
-/// preferences, which need somewhere real to sync to).
+/// A full product screen. Signed out: an honest empty state -- never a
+/// fabricated account. Signed in: the real account (name/email from
+/// /auth/me), a real eligibility-profile completion count (from
+/// /me/profile), and a working sign-out. See the redesign plan's Phase
+/// A/B capability table for exactly which pieces are real (theme
+/// preference and saved-schemes count are local-only when signed out,
+/// account-synced when signed in; account itself and the eligibility
+/// profile are always real once signed in) vs. still inert (notification
+/// delivery, language -- no infrastructure for either exists yet).
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -25,6 +30,9 @@ class ProfileScreen extends ConsumerWidget {
     final colors = context.colors;
     final savedCount = ref.watch(savedSchemesProvider).length;
     final themeMode = ref.watch(themeModeProvider);
+    final authState = ref.watch(authControllerProvider).valueOrNull;
+    final isSignedIn = authState?.isSignedIn ?? false;
+    final user = authState?.user;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
@@ -35,45 +43,16 @@ class ProfileScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: colors.surfaceMuted,
-                          child: Icon(Icons.person_outline, color: colors.textSecondary, size: 28),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Not signed in', style: theme.textTheme.titleMedium),
-                              Text(
-                                'Sign in to sync your profile and saved schemes across devices.',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => context.push(AppRoutes.login),
-                            child: const Text('Sign in'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                child: isSignedIn && user != null
+                    ? _SignedInHeader(user: user)
+                    : const _SignedOutHeader(),
               ),
+              if (isSignedIn) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Text('Your eligibility profile', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.sm),
+                const AppCard(child: _ProfileCompletionCard()),
+              ],
               const SizedBox(height: AppSpacing.lg),
               Text('On this device', style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
@@ -84,7 +63,9 @@ class ProfileScreen extends ConsumerWidget {
                     _Row(
                       icon: Icons.bookmark_outline,
                       title: 'Saved schemes',
-                      subtitle: '$savedCount saved on this device',
+                      subtitle: isSignedIn
+                          ? '$savedCount saved, synced to your account'
+                          : '$savedCount saved on this device',
                       onTap: () => context.go(AppRoutes.saved),
                     ),
                     const Divider(height: 1),
@@ -102,7 +83,7 @@ class ProfileScreen extends ConsumerWidget {
                     _InertRow(
                       icon: Icons.notifications_outlined,
                       title: 'Updates about new schemes',
-                      subtitle: 'Requires an account to deliver -- coming with sign-in',
+                      subtitle: 'No delivery channel (email/push) exists yet',
                     ),
                     const Divider(height: 1),
                     _InertRow(
@@ -129,6 +110,170 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SignedOutHeader extends StatelessWidget {
+  const _SignedOutHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: colors.surfaceMuted,
+              child: Icon(Icons.person_outline, color: colors.textSecondary, size: 28),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Not signed in', style: theme.textTheme.titleMedium),
+                  Text(
+                    'Sign in to sync your profile and saved schemes across devices.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: () => context.push(AppRoutes.login),
+                child: const Text('Sign in'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SignedInHeader extends ConsumerWidget {
+  const _SignedInHeader({required this.user});
+
+  final AuthUser user;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final displayName = (user.fullName?.trim().isNotEmpty ?? false) ? user.fullName! : user.email;
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: colors.brandTint,
+              child: Text(
+                initial,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: colors.brand,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(displayName, style: theme.textTheme.titleMedium),
+                  Text(user.email, style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+                icon: const Icon(Icons.logout, size: AppSpacing.iconSm),
+                label: const Text('Sign out'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Real, from `/me/profile` -- the same "N of 27 answered" metric the
+/// wizard already computes locally each session (ProfileFormController.
+/// totalAnswered), here surfaced as its persisted, server-side equivalent.
+class _ProfileCompletionCard extends ConsumerWidget {
+  const _ProfileCompletionCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final profileAsync = ref.watch(myProfileProvider);
+
+    return profileAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, _) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Text(
+          "Couldn't load your profile right now.",
+          style: theme.textTheme.bodySmall,
+        ),
+      ),
+      data: (response) {
+        final answered = response?['answered_count'] as int? ?? 0;
+        final total = response?['total_count'] as int? ?? 27;
+        return Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Icon(Icons.fact_check_outlined, color: colors.brand),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$answered of $total answered', style: theme.textTheme.bodyMedium),
+                    Text(
+                      answered == 0
+                          ? 'Answer questions in For You to build your profile.'
+                          : 'Used to personalize your recommendations.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.go(AppRoutes.recommendations),
+                child: Text(answered == 0 ? 'Start' : 'Update'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

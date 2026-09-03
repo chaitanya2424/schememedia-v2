@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/providers.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../data/recommendations_api.dart';
 import '../../data/recommendations_repository.dart';
 import '../../domain/recommendation.dart';
@@ -13,13 +15,20 @@ final recommendationsRepositoryProvider = Provider<RecommendationsRepository>(
   (ref) => RecommendationsRepository(ref.watch(recommendationsApiProvider)),
 );
 
-/// Screen-level notifier -- built out fully when the Recommendations screen
-/// (build-order step 4) lands; present now so the repository/provider
-/// layer for this feature is already typed and wired.
+/// Screen-level notifier. Signed out: unchanged -- calls the public
+/// `/recommendations` with whatever profile the wizard collected this
+/// session (or none). Signed in: persists that same collected profile to
+/// the backend first (best-effort -- a failed persist still lets the
+/// fetch proceed against whatever was already saved server-side, since
+/// the wizard's own answers are never lost, only not yet synced), then
+/// calls `/recommendations/me`, which always ranks against the persisted
+/// profile server-side. Either way this is the one and only place a
+/// recommendations fetch happens -- no second ranking implementation.
 class RecommendationsNotifier extends StateNotifier<AsyncValue<RecommendationResponse?>> {
-  RecommendationsNotifier(this._repository) : super(const AsyncValue.data(null));
+  RecommendationsNotifier(this._repository, this._ref) : super(const AsyncValue.data(null));
 
   final RecommendationsRepository _repository;
+  final Ref _ref;
   String _lastQuery = '';
   Map<String, dynamic>? _lastProfile;
 
@@ -32,9 +41,20 @@ class RecommendationsNotifier extends StateNotifier<AsyncValue<RecommendationRes
     _lastQuery = trimmed;
     _lastProfile = profile;
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(
-      () => _repository.getRecommendations(query: trimmed, profile: profile),
-    );
+    state = await AsyncValue.guard(() async {
+      if (_ref.read(isSignedInProvider)) {
+        if (profile != null && profile.isNotEmpty) {
+          try {
+            await _ref.read(profileRepositoryProvider).updateProfile(profile);
+            _ref.invalidate(myProfileProvider);
+          } catch (_) {
+            // Best-effort persist -- see class doc.
+          }
+        }
+        return _repository.getMyRecommendations(query: trimmed, limit: 20);
+      }
+      return _repository.getRecommendations(query: trimmed, profile: profile);
+    });
   }
 
   /// Re-issues the same request after a failure -- the wizard's query
@@ -51,5 +71,5 @@ class RecommendationsNotifier extends StateNotifier<AsyncValue<RecommendationRes
 
 final recommendationsNotifierProvider =
     StateNotifierProvider<RecommendationsNotifier, AsyncValue<RecommendationResponse?>>(
-      (ref) => RecommendationsNotifier(ref.watch(recommendationsRepositoryProvider)),
+      (ref) => RecommendationsNotifier(ref.watch(recommendationsRepositoryProvider), ref),
     );

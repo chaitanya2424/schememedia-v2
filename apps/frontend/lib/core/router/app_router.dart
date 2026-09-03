@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/assistant/presentation/screens/assistant_screen.dart';
+import '../../features/auth/presentation/providers/auth_controller.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -38,6 +39,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       final seenOnboarding = ref.read(hasSeenOnboardingProvider);
       final goingToOnboarding = state.matchedLocation == AppRoutes.onboarding;
       if (!seenOnboarding && !goingToOnboarding) return AppRoutes.onboarding;
+
+      // An already-signed-in user landing on /login (e.g. a stale link, a
+      // browser back-button) goes home instead of seeing the sign-in form
+      // again -- read, not watch, same as the onboarding gate above: this
+      // re-evaluates on the next navigation, not reactively the instant
+      // auth state changes mid-session.
+      final isSignedIn = ref.read(authControllerProvider).valueOrNull?.isSignedIn ?? false;
+      if (isSignedIn && state.matchedLocation == AppRoutes.login) return AppRoutes.home;
       return null;
     },
     routes: [

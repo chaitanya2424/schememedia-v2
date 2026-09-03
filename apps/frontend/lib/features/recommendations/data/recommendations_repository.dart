@@ -20,4 +20,15 @@ class RecommendationsRepository {
       throw e.asApiException;
     }
   }
+
+  Future<RecommendationResponse> getMyRecommendations({
+    required String query,
+    int limit = 20,
+  }) async {
+    try {
+      return await _api.getMyRecommendations(query: query, limit: limit);
+    } on DioException catch (e) {
+      throw e.asApiException;
+    }
+  }
 }

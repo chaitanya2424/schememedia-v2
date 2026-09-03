@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../domain/eligibility_attribute.dart';
 import '../../domain/indian_states.dart';
 import '../providers/profile_form_provider.dart';
@@ -67,6 +69,31 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
   final _queryController = TextEditingController();
   int _index = 0;
   String? _queryError;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybePrefillFromPersistedProfile();
+  }
+
+  /// A signed-in user's persisted profile (GET /me/profile) prefills the
+  /// wizard so they don't re-answer everything -- only when nothing has
+  /// been answered yet *this session*: an in-progress edit (however it
+  /// started) always wins over a background prefill. Best-effort: the
+  /// wizard works identically, just blank, if this fails or the caller is
+  /// signed out.
+  Future<void> _maybePrefillFromPersistedProfile() async {
+    if (!ref.read(isSignedInProvider)) return;
+    final controller = ref.read(profileFormControllerProvider);
+    if (!controller.isEmpty) return;
+    try {
+      final response = await ref.read(profileRepositoryProvider).getProfile();
+      if (!mounted || !controller.isEmpty) return;
+      controller.loadFrom(response['attributes'] as Map<String, dynamic>);
+    } catch (_) {
+      // No prefill -- the wizard still works starting from blank.
+    }
+  }
 
   @override
   void dispose() {
