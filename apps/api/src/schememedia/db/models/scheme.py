@@ -159,6 +159,14 @@ class Scheme(Base, TimestampMixin):
     # checked. raw_eligibility preserves the original blob for audit.
     data_source: Mapped[str | None] = mapped_column(String(100))
     last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Distinct from last_verified_at, which is reserved for the future
+    # manual-verification workflow (see VerificationStatus) and today is
+    # never set by anything -- this one records the last time the importer
+    # actually touched the row (including a no-op upsert of unchanged
+    # data), regardless of whether anything changed. Never set for a scheme
+    # the importer held back because it is officially_verified -- see
+    # importer/pipeline.py's compare-before-write logic.
+    last_imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     needs_review: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )

@@ -167,8 +167,10 @@ def test_batch_size_is_configurable(truncated_session: Session) -> None:
         report = run_import(truncated_session, SMALL_FIXTURE, batch_size=3)
 
     assert report.schemes_seen == 8
-    # ceil(8 / 3) = 3 scheme batches, plus one commit for categories/tags.
-    assert commit_spy.call_count == 4
+    # One commit for categories/tags, ceil(8 / 3) = 3 scheme batches, plus
+    # one final commit that records this run's finished_at/report on its
+    # ImportRun row (see run_import's provenance finalisation step).
+    assert commit_spy.call_count == 5
 
 
 def test_partial_failure_rolls_back_only_the_failed_batch(

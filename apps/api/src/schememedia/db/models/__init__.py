@@ -8,6 +8,7 @@ migrations.
 from schememedia.db.models.base import Base
 from schememedia.db.models.content import Comment, Notification, Report
 from schememedia.db.models.interaction import SchemeLike, SchemeRating, SchemeSave
+from schememedia.db.models.provenance import ImportRun, SchemeFieldChange
 from schememedia.db.models.scheme import (
     EMBEDDING_DIM,
     EMBEDDING_MODEL_NAME,
@@ -27,6 +28,7 @@ __all__ = [
     "Base",
     "Category",
     "Comment",
+    "ImportRun",
     "Notification",
     "RefreshToken",
     "Report",
@@ -34,6 +36,7 @@ __all__ = [
     "SchemeBenefit",
     "SchemeDocument",
     "SchemeEligibilityRule",
+    "SchemeFieldChange",
     "SchemeLike",
     "SchemeRating",
     "SchemeSave",
