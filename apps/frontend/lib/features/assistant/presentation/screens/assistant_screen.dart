@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../providers/assistant_providers.dart';
 import '../widgets/chat_entry_view.dart';
@@ -151,6 +154,9 @@ class _MoreIdeasState extends State<_MoreIdeas> {
   }
 }
 
+/// Exact copy from the reference: eyebrow "A GROUNDED GUIDE", headline
+/// "Ask, then understand.", suggestion prompts as stacked full-width
+/// cards (not chips), a "grounded in sources" trust banner.
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.onExampleTap});
 
@@ -159,36 +165,107 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.chat_bubble_outline, size: 40, color: theme.colorScheme.outline),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Describe your situation in your own words.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'The assistant only answers using real scheme data -- it will tell you '
-              'when it doesn\'t know something rather than guess.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              alignment: WrapAlignment.center,
+    final colors = context.colors;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const EyebrowLabel('A grounded guide'),
+          const SizedBox(height: AppSpacing.xs),
+          Text('Ask, then understand.', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            "I'll point to the rule, explain the uncertainty and never guess on your behalf.",
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            child: Column(
               children: [
-                for (final example in _examples)
-                  ActionChip(label: Text(example), onPressed: () => onExampleTap(example)),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: colors.brandTint,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  ),
+                  child: Icon(Icons.auto_awesome, color: colors.brand),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text('What would you like to know?', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Try a question about a scheme, a benefit or the documents you may need.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                for (final example in _examples) ...[
+                  _SuggestionCard(text: example, onTap: () => onExampleTap(example)),
+                  if (example != _examples.last) const SizedBox(height: AppSpacing.sm),
+                ],
               ],
             ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF3F8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.shield_outlined, color: Color(0xFF1565C0)),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Answers are grounded in sources',
+                        style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        'We show you where the information comes from so you can check it yourself.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionCard extends StatelessWidget {
+  const _SuggestionCard({required this.text, required this.onTap});
+
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: colors.surface,
+          side: BorderSide(color: colors.divider),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(text, textAlign: TextAlign.left)),
+            Icon(Icons.arrow_outward, size: AppSpacing.iconSm, color: colors.brand),
           ],
         ),
       ),
