@@ -32,6 +32,18 @@ dependencies = [
     # correct for a single instance, and the documented upgrade path to a
     # Redis backend is a one-line storage_uri change, not a rewrite.
     "slowapi>=0.1.9",
+    # Auth (core/security.py). bcrypt directly, not passlib -- passlib is
+    # effectively unmaintained and has had version-detection breakage
+    # against recent bcrypt releases; the bcrypt package's own hashpw/
+    # checkpw API is all password hashing needs here. PyJWT for access
+    # tokens (HS256, short-lived, stateless) -- refresh tokens are NOT JWTs,
+    # see db/models/user.py's RefreshToken and core/security.py.
+    "bcrypt>=4.2.0",
+    "pyjwt>=2.9.0",
+    # Required for pydantic's EmailStr (core/schemas use it on the
+    # registration/login request bodies) -- pydantic raises an ImportError
+    # at class-definition time otherwise.
+    "email-validator>=2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -66,6 +78,20 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# These four share fixtures (client, fastapi_app) imported from
+# tests/_account_fixtures.py rather than each redefining them locally --
+# every test function's own `client` parameter then reads, to a plain
+# import-unaware linter, as "redefining" that import. It is the correct
+# pytest pattern (a fixture's registered name comes from its function's
+# __name__, not from what it's imported as -- see
+# tests/_account_fixtures.py's module docstring), not a real unused/
+# shadowed import.
+"tests/test_auth_routes.py" = ["F811"]
+"tests/test_profile_routes.py" = ["F811"]
+"tests/test_saved_schemes_routes.py" = ["F811"]
+"tests/test_recommendations_me_routes.py" = ["F811"]
 
 [tool.mypy]
 python_version = "3.12"

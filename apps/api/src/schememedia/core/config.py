@@ -12,7 +12,7 @@ from functools import lru_cache
 from typing import Annotated, Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from pydantic import Field, PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 Environment = Literal["local", "test", "staging", "production"]
@@ -107,6 +107,34 @@ class Settings(BaseSettings):
     # testing traffic, short enough that a follow-up question in a real
     # conversation almost never collides with a stale cached answer.
     assistant_cache_ttl_seconds: int = 120
+
+    # ---------- Auth (core/security.py) ----------
+    # HS256-signed access tokens. Defaulted, not required like database_url,
+    # so the existing test suite's many bare `Settings(...)` constructions
+    # (test_rate_limit.py, test_assistant_guard.py, conftest.py, etc.) don't
+    # all need updating just to add auth -- instead, _reject_default_secret
+    # below refuses to let the literal default reach a production process.
+    jwt_secret_key: str = "insecure-dev-secret-change-me-before-deploying"
+    # Short-lived and stateless -- verified from the signature alone, no DB
+    # hit per request. 15 minutes bounds how long a leaked access token is
+    # useful; the refresh token (below) is what actually stays logged in.
+    jwt_access_token_expire_minutes: int = 15
+    # Long-lived, opaque (NOT a JWT -- see RefreshToken's own docstring),
+    # rotated on every use, hash-only in the database. 30 days is a
+    # conventional "stay signed in" window for a consumer app.
+    jwt_refresh_token_expire_days: int = 30
+
+    @model_validator(mode="after")
+    def _reject_default_secret_in_production(self) -> Settings:
+        if (
+            self.app_env == "production"
+            and self.jwt_secret_key == "insecure-dev-secret-change-me-before-deploying"
+        ):
+            raise ValueError(
+                "JWT_SECRET_KEY must be set to a real secret when APP_ENV=production -- "
+                "the default value must never sign a production token."
+            )
+        return self
 
     # ---------- CORS ----------
     # Explicit origins only. v1 used allow_origins=["*"] together with

@@ -22,11 +22,16 @@ from schememedia.api.v1.schemas.common import (
     SchemeTypeOut,
     VerificationStatusOut,
 )
-from schememedia.core.deps import RecommendationServiceDep
+from schememedia.core.deps import (
+    CurrentUserDep,
+    RecommendationServiceDep,
+    UserProfileRepositoryDep,
+)
 from schememedia.core.rate_limit import RECOMMENDATIONS_LIMIT, limiter
 from schememedia.db.models.enums import ALL_ATTRIBUTE_KEYS
 from schememedia.services.eligibility_matcher import RuleEvaluation
 from schememedia.services.recommendation import Recommendation
+from schememedia.services.user_profile import to_recommendation_profile
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -148,6 +153,61 @@ async def get_recommendations(
     )
     response = await run_in_threadpool(
         service.recommend, body.query, profile=clean_profile, limit=body.limit
+    )
+    return RecommendationResponseOut(
+        query=response.query,
+        profile_provided=response.profile_provided,
+        total_returned=response.total_returned,
+        eligibility_breakdown=response.eligibility_breakdown,
+        recommendations=[
+            RecommendationOut.from_domain(r) for r in response.recommendations
+        ],
+    )
+
+
+class MyRecommendationRequest(BaseModel):
+    """Same as RecommendationRequest, minus `profile` -- an authenticated
+    caller's profile always comes from their persisted UserProfile (see
+    get_my_recommendations below), never from the request body. Accepting
+    a client-supplied profile here would let a caller's own answers
+    silently override what they already saved, and would reopen exactly
+    the "never trust a client-supplied identity/profile" issue auth exists
+    to close.
+    """
+
+    query: Annotated[str, Field(min_length=1, max_length=200)]
+    limit: Annotated[int, Field(ge=1, le=100)] = 20
+
+
+@router.post(
+    "/me",
+    response_model=RecommendationResponseOut,
+    operation_id="getMyRecommendations",
+    summary="Recommendations for the signed-in user, ranked against their saved profile",
+    responses={
+        401: {"description": "Missing, invalid, or expired access token."},
+        429: {"description": f"Rate limited -- {RECOMMENDATIONS_LIMIT} per client."},
+    },
+)
+@limiter.limit(RECOMMENDATIONS_LIMIT)
+async def get_my_recommendations(
+    request: Request,  # required by @limiter.limit -- see its own docstring on why
+    service: RecommendationServiceDep,
+    user: CurrentUserDep,
+    profiles: UserProfileRepositoryDep,
+    body: Annotated[MyRecommendationRequest, Body()],
+) -> RecommendationResponseOut:
+    # The exact same RecommendationService.recommend() the public endpoint
+    # above calls -- only the profile's source differs. Eligibility still
+    # only ever demotes a known FAIL; see services/recommendation.py.
+    profile_row = await profiles.get_or_create(user.id)
+    # `or None`, not the bare dict: a profile with zero answered attributes
+    # should read as "no profile provided yet" (the same honest prompt the
+    # public endpoint shows for profile=None), not as a provided-but-empty
+    # profile.
+    profile = to_recommendation_profile(profile_row) or None
+    response = await run_in_threadpool(
+        service.recommend, body.query, profile=profile, limit=body.limit
     )
     return RecommendationResponseOut(
         query=response.query,

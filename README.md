@@ -184,9 +184,12 @@ changes.
 | Route | Limit | Why |
 |---|---|---|
 | `POST /api/v1/assistant/message` | **5/minute** | Strictest — Gemini's free-tier daily quota (20 requests/day) can be exhausted by a single burst |
-| `POST /api/v1/recommendations` | 20/minute | Database-only, still bounded |
+| `POST /api/v1/recommendations` \| `/recommendations/me` | 20/minute | Database-only, still bounded |
 | `GET /api/v1/search` | 30/minute | Database-only, the cheapest call |
 | `GET /api/v1/schemes/{identifier}` | 30/minute | |
+| `POST /api/v1/auth/login` | 10/minute | Bounds password-guessing |
+| `POST /api/v1/auth/register` | 5/minute | Bounds account-creation abuse |
+| `POST /api/v1/auth/refresh` | 20/minute | Routine, but still bounded |
 
 A request over its route's limit gets `429` in the same `{"error": {...}}`
 envelope as every other error, plus a `Retry-After` header. Request bodies
@@ -212,6 +215,40 @@ Every turn also logs a structured `assistant_turn_completed` (or
 carrying today's running count, per-model-call latency, total turn latency,
 cache-hit status, and grounding-warning count, so usage is visible from logs
 alone without a separate metrics stack.
+
+### Authentication
+
+Bearer tokens (`core/security.py`), not cookies -- identical on Flutter Web
+and a future native Android client, no CSRF surface to defend.
+
+- **Access token** -- HS256-signed JWT, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`
+  (default 15). Verified from its signature alone, no database hit per
+  request. Send it as `Authorization: Bearer <token>`.
+- **Refresh token** -- opaque random string, **not** a JWT,
+  `JWT_REFRESH_TOKEN_EXPIRE_DAYS` (default 30). Only its SHA-256 hash is
+  ever stored (`refresh_tokens.token_hash`) -- a database leak alone
+  cannot yield a usable token. Rotated on every use; presenting an
+  already-rotated/revoked token is treated as theft and revokes every
+  active token for that user.
+- `JWT_SECRET_KEY` **must** be set to a real secret before
+  `APP_ENV=production` -- the app refuses to start with the checked-in
+  default otherwise (`core/config.py`).
+
+| Route | Auth | Notes |
+|---|---|---|
+| `POST /api/v1/auth/register` \| `/login` \| `/refresh` \| `/logout` | — | `/logout` and a bad `/refresh` still 204/401 cleanly for an unknown token |
+| `GET /api/v1/auth/me` | required | the signed-in account |
+| `GET`/`PUT /api/v1/me/profile` | required | the eligibility profile, see below |
+| `GET`/`POST`/`DELETE /api/v1/me/saved-schemes[/{scheme_id}]` | required | bookmarks; saving an unknown `scheme_id` is `404`, a duplicate save is a no-op |
+| `POST /api/v1/recommendations/me` | required | same `RecommendationService` as the public endpoint, profile always read server-side from `/me/profile` -- the request body has no `profile` field, so nothing a client sends there can override it |
+
+**The eligibility profile reuses the exact vocabulary the eligibility
+engine already uses** (`EligibilityAttribute`, `db/models/enums.py`) --
+`UserProfile`'s columns are literally named after it
+(`services/user_profile.py` converts between the two generically, no
+second attribute system). An unanswered attribute is `null`, never
+coerced to `false`; a `PUT` is a partial update -- a key present with
+value `null` clears it back to unknown, a key not present is left alone.
 
 ### Connecting to Neon or another pooled PostgreSQL
 

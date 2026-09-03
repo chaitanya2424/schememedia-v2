@@ -187,6 +187,11 @@ def test_production_hides_interactive_docs() -> None:
     settings = Settings(
         app_env="production",
         database_url="postgresql://u:p@localhost:5432/db",
+        # A real production Settings must supply its own secret -- see
+        # core/config.py's _reject_default_secret_in_production; this is
+        # just a stand-in, not read anywhere in this test.
+        jwt_secret_key="a-real-production-secret-not-the-default",
+        cors_origins=["https://example.com"],
     )
     app = create_app(settings)
     assert app.docs_url is None
