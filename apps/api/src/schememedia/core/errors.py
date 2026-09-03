@@ -105,6 +105,33 @@ class ServiceUnavailableError(AppError):
     message = "A required service is temporarily unavailable."
 
 
+class AssistantDisabledError(AppError):
+    """The Settings.assistant_enabled kill switch is off.
+
+    A distinct code from ServiceUnavailableError deliberately -- "the
+    operator turned this off" and "a dependency is down" are different
+    situations for a caller (and a human debugging a report) to tell apart,
+    even though both are a 503 today.
+    """
+
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "assistant_disabled"
+    message = "The assistant is temporarily disabled. Please try again later."
+
+
+class AssistantQuotaExceededError(AppError):
+    """The configured daily assistant volume cap (Settings.assistant_daily_limit)
+    has been reached. Raised before the provider is ever called -- see
+    core/assistant_guard.py's DailyUsageCounter.
+    """
+
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "assistant_quota_exceeded"
+    message = (
+        "The assistant has reached its usage limit for today. Please try again tomorrow."
+    )
+
+
 def _envelope(
     *, code: str, message: str, details: dict[str, Any] | None = None
 ) -> dict[str, Any]:

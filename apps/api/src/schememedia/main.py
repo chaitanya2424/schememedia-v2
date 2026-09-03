@@ -16,6 +16,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 from schememedia.api.v1.router import api_router
 from schememedia.api.v1.routers import health
+from schememedia.core.assistant_guard import AssistantGuard
 from schememedia.core.config import Settings, get_settings
 from schememedia.core.errors import register_exception_handlers
 from schememedia.core.logging import configure_logging, get_logger
@@ -79,6 +80,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # limiter`, and it's what core/errors.py's RateLimitExceeded handler
     # reads the hit limit's window from.
     app.state.limiter = limiter
+    # One daily-usage counter and one response cache per app instance --
+    # see core/assistant_guard.py's module docstring for why this is not a
+    # module-level singleton the way `limiter` is.
+    app.state.assistant_guard = AssistantGuard.from_settings(settings)
 
     # Order matters -- each `add_middleware` call becomes the new outermost
     # layer (see GZip's own comment below for why that's non-obvious).

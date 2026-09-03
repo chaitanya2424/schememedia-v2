@@ -88,6 +88,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -257,10 +258,24 @@ Keep the reply concise: a sentence or two per scheme, not a wall of text.\
 
 
 @dataclass(frozen=True)
+class AssistantTurnTiming:
+    """Wall-clock cost of one turn, broken down by the two model calls --
+    see run_assistant_turn. Logged by api/v1/routers/assistant.py so
+    per-call and total latency are both visible without adding a metrics
+    stack (Phase 1 of the assistant usage/cost hardening design).
+    """
+
+    tool_call_ms: float
+    reply_ms: float
+    total_ms: float
+
+
+@dataclass(frozen=True)
 class AssistantTurnResult:
     reply_text: str
     evidence: dict[str, Any]
     grounding_warnings: list[str]
+    timing: AssistantTurnTiming
 
 
 def run_assistant_turn(
@@ -273,26 +288,40 @@ def run_assistant_turn(
     for why `provider` is the only thing here that ever changes between
     Gemini and Anthropic.
     """
+    turn_started = time.perf_counter()
+
+    tool_call_started = time.perf_counter()
     tool_call = provider.call_with_forced_tool(
         system_prompt=TOOL_CALL_SYSTEM_PROMPT,
         user_message=user_message,
         tool=FIND_SCHEMES_TOOL,
     )
+    tool_call_ms = (time.perf_counter() - tool_call_started) * 1000
+
     query = tool_call.input.get("query") or user_message
     profile = tool_call.input.get("profile") or {}
 
     evidence = execute_find_matching_schemes(service, query, profile)
 
+    reply_started = time.perf_counter()
     reply_text = provider.generate_reply(
         system_prompt=ANSWER_SYSTEM_PROMPT,
         user_message=user_message,
         tool_call=tool_call,
         tool_result_json=json.dumps(evidence),
     )
+    reply_ms = (time.perf_counter() - reply_started) * 1000
+
     warnings = verify_grounded(reply_text, evidence)
+    total_ms = (time.perf_counter() - turn_started) * 1000
 
     return AssistantTurnResult(
-        reply_text=reply_text, evidence=evidence, grounding_warnings=warnings
+        reply_text=reply_text,
+        evidence=evidence,
+        grounding_warnings=warnings,
+        timing=AssistantTurnTiming(
+            tool_call_ms=tool_call_ms, reply_ms=reply_ms, total_ms=total_ms
+        ),
     )
 
 

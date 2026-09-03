@@ -79,6 +79,12 @@ def fastapi_app(fake_provider: FakeProvider):
         log_json=False,
         log_level="WARNING",
         cors_origins=["http://localhost:3000"],
+        # Several tests below reuse the same message text against this one
+        # module-scoped app while mutating fake_provider.reply_text between
+        # calls -- the opposite of what the assistant's response cache
+        # (core/assistant_guard.py) is for. Cache behaviour itself is
+        # covered by tests/test_assistant_guard.py.
+        assistant_cache_ttl_seconds=0,
     )
     app = create_app(settings)
     app.dependency_overrides[get_llm_provider] = lambda: fake_provider

@@ -14,6 +14,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from schememedia.core.assistant_guard import AssistantGuard
 from schememedia.core.config import Settings
 from schememedia.db import sync_session
 from schememedia.db.session import get_session
@@ -32,8 +33,14 @@ def get_app_settings(request: Request) -> Settings:
     return settings
 
 
+def get_assistant_guard(request: Request) -> AssistantGuard:
+    guard: AssistantGuard = request.app.state.assistant_guard
+    return guard
+
+
 SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+AssistantGuardDep = Annotated[AssistantGuard, Depends(get_assistant_guard)]
 
 
 # ---------------------------------------------------------------------------

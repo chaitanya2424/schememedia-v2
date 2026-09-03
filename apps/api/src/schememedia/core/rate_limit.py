@@ -11,6 +11,12 @@ burst of requests can exhaust Gemini's entire daily free-tier quota (20
 requests/day) in seconds, so that one limit protects an external, metered,
 shared dependency -- not just this app's own database, the way the other
 limits do.
+
+This limit alone only bounds *burst rate*, not daily volume -- 5/minute
+sustained is still up to 7,200 requests/day from one client, far past a
+~20/day free tier. core/assistant_guard.py's DailyUsageCounter closes that
+gap with a separate, configurable, process-wide daily cap; both apply
+together on the assistant route (see api/v1/routers/assistant.py).
 """
 
 from __future__ import annotations

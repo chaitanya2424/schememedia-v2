@@ -87,6 +87,27 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-opus-5"
 
+    # ---------- Assistant usage/cost guardrails (core/assistant_guard.py) ----------
+    # Kill switch: flip to false (one env var + redeploy, no code change) to
+    # stop every assistant call instantly if usage or cost looks wrong.
+    assistant_enabled: bool = True
+    # A process-wide daily cap, independent of gemini_model's actual
+    # provider-side quota -- configurable rather than hard-coded because
+    # that quota is a Google Gemini free-tier number today (observed ~20/day
+    # against gemini-3.6-flash, see test_assistant.py's live-Gemini test)
+    # and will change the moment the provider, plan, or model does. The
+    # per-IP per-minute limiter (core/rate_limit.py, ASSISTANT_LIMIT) still
+    # applies underneath this -- this closes the gap that limiter's own
+    # docstring names: a per-minute cap alone bounds burst rate, not daily
+    # volume.
+    assistant_daily_limit: int = 20
+    # How long an identical (stripped, exact-match) assistant request is
+    # served from cache instead of spending a real provider call. Short by
+    # design -- long enough to absorb accidental double-submits and repeat
+    # testing traffic, short enough that a follow-up question in a real
+    # conversation almost never collides with a stale cached answer.
+    assistant_cache_ttl_seconds: int = 120
+
     # ---------- CORS ----------
     # Explicit origins only. v1 used allow_origins=["*"] together with
     # allow_credentials=True, a combination browsers reject outright.

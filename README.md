@@ -193,6 +193,26 @@ envelope as every other error, plus a `Retry-After` header. Request bodies
 over 100KB (`main.py`'s `MAX_REQUEST_BODY_BYTES` — every real payload this
 API accepts is well under 10KB) get `413`, same envelope.
 
+### Assistant usage/cost guardrails
+
+The 5/minute limit above only bounds *burst rate* — sustained, it still
+allows up to 7,200 requests/day from one client, far past a ~20/day free
+tier. `core/assistant_guard.py` adds three more layers, all configurable via
+`.env` (see `.env.example`), all in-memory/per-process like the rate limiter
+above (same Redis upgrade path if a second instance is ever added):
+
+| Guard | Env var | Default | Behaviour |
+|---|---|---|---|
+| Kill switch | `ASSISTANT_ENABLED` | `true` | `false` stops every assistant call instantly (one env var + redeploy, no code change) — `503 assistant_disabled`, provider never called. |
+| Daily volume cap | `ASSISTANT_DAILY_LIMIT` | `20` | A process-wide count of calls since the last UTC midnight. Once reached: `503 assistant_quota_exceeded`, provider never called for that request. Not refunded on a failed call — a failed call still spent real provider quota. |
+| Response cache | `ASSISTANT_CACHE_TTL_SECONDS` | `120` | An identical (exact, whitespace-trimmed) question within the TTL is served from cache — no provider call, and does not count against the daily cap. `0` disables caching. |
+
+Every turn also logs a structured `assistant_turn_completed` (or
+`_failed`/`_blocked`/`_daily_quota_exceeded`) event — `core/logging.py` —
+carrying today's running count, per-model-call latency, total turn latency,
+cache-hit status, and grounding-warning count, so usage is visible from logs
+alone without a separate metrics stack.
+
 ### Connecting to Neon or another pooled PostgreSQL
 
 Set `DB_DISABLE_STATEMENT_CACHE=true` when using a **pooled** endpoint.
