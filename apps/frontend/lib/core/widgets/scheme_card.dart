@@ -24,7 +24,7 @@ class BenefitHighlight {
 
 /// The one reusable consumer-product scheme card -- category icon chip,
 /// bookmark toggle (real, on-device persistence via
-/// [savedSchemeIdsProvider]), name, meta line, description, an optional
+/// [savedSchemesProvider]), name, meta line, description, an optional
 /// real benefit highlight, verification + optional eligibility pills, and
 /// a single clear primary CTA. `SchemeResultCard` (Explore),
 /// `RecommendationCard` (For You), and `EvidenceCard` (Assistant) each
@@ -90,7 +90,7 @@ class SchemeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isSaved = ref.watch(savedSchemeIdsProvider.select((ids) => ids.contains(schemeId)));
+    final isSaved = ref.watch(savedSchemesProvider.select((s) => s.containsKey(schemeId)));
 
     final metaParts = [if (category != null) category!, if (metaSuffix != null) metaSuffix!];
 
@@ -127,7 +127,18 @@ class SchemeCard extends ConsumerWidget {
               ),
               _SaveButton(
                 saved: isSaved,
-                onTap: () => ref.read(savedSchemeIdsProvider.notifier).toggle(schemeId),
+                onTap: () => ref
+                    .read(savedSchemesProvider.notifier)
+                    .toggle(
+                      SavedScheme(
+                        schemeId: schemeId,
+                        name: name,
+                        category: category,
+                        description: description,
+                        verificationStatus: verificationStatus,
+                        needsReview: needsReview,
+                      ),
+                    ),
               ),
             ],
           ),
