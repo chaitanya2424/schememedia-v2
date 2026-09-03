@@ -12,4 +12,8 @@ class SchemeDetailApi {
     final json = await _client.get('/schemes/$identifier');
     return SchemeDetail.fromJson(json as Map<String, dynamic>);
   }
+
+  Future<void> like(String schemeId) => _client.post('/schemes/$schemeId/like');
+
+  Future<void> unlike(String schemeId) => _client.delete('/schemes/$schemeId/like');
 }

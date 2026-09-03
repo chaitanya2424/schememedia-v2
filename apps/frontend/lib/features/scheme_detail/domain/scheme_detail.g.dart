@@ -71,6 +71,7 @@ _SchemeDetail _$SchemeDetailFromJson(Map<String, dynamic> json) =>
       saveCount: (json['save_count'] as num).toInt(),
       commentCount: (json['comment_count'] as num).toInt(),
       averageRating: (json['average_rating'] as num?)?.toDouble(),
+      viewerHasLiked: json['viewer_has_liked'] as bool?,
     );
 
 Map<String, dynamic> _$SchemeDetailToJson(
@@ -101,4 +102,5 @@ Map<String, dynamic> _$SchemeDetailToJson(
   'save_count': instance.saveCount,
   'comment_count': instance.commentCount,
   'average_rating': instance.averageRating,
+  'viewer_has_liked': instance.viewerHasLiked,
 };

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/domain/enums.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -14,10 +15,13 @@ import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
 import '../../../../core/widgets/verification_badge.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../recommendations/domain/recommendation.dart';
 import '../../../recommendations/presentation/providers/recommendations_providers.dart';
+import '../../domain/comment.dart';
 import '../../domain/scheme_detail.dart';
 import '../../domain/scheme_detail_args.dart';
+import '../providers/comments_providers.dart';
 import '../providers/scheme_detail_providers.dart';
 
 /// Screen 3 of the build order. Renders the full `SchemeDetailOut` plus,
@@ -223,6 +227,9 @@ class _PrimaryColumn extends StatelessWidget {
             children: [for (final tag in detail.tags) Chip(label: Text(tag))],
           ),
         ],
+        const SizedBox(height: AppSpacing.lg),
+        const SectionHeader('Comments'),
+        _CommentsSection(schemeId: detail.schemeId),
         const SizedBox(height: AppSpacing.xl),
       ],
     );
@@ -386,11 +393,12 @@ class _KeyFactsCard extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.lg,
             runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _StatCount(
-                icon: Icons.favorite_border,
-                count: detail.likeCount,
-                label: 'likes',
+              _LikeButton(
+                schemeId: detail.schemeId,
+                initialLiked: detail.viewerHasLiked,
+                initialCount: detail.likeCount,
               ),
               _StatCount(
                 icon: Icons.bookmark_border,
@@ -411,6 +419,133 @@ class _KeyFactsCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A real like toggle -- was previously a read-only `_StatCount`, so
+/// nothing on this screen could actually be liked (see the bug report this
+/// fixes). Manages its own optimistic local state rather than going
+/// through `schemeDetailProvider`: invalidating that family provider would
+/// flash the whole page back to its loading skeleton for one tap, which a
+/// like button shouldn't do. Reverts on failure and surfaces the error via
+/// a SnackBar, same pattern api_exception.dart's `.message` is used
+/// elsewhere.
+class _LikeButton extends ConsumerStatefulWidget {
+  const _LikeButton({
+    required this.schemeId,
+    required this.initialLiked,
+    required this.initialCount,
+  });
+
+  final String schemeId;
+  // null means "signed out" (see SchemeDetail.viewerHasLiked's doc).
+  final bool? initialLiked;
+  final int initialCount;
+
+  @override
+  ConsumerState<_LikeButton> createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends ConsumerState<_LikeButton> {
+  late bool? _liked = widget.initialLiked;
+  late int _count = widget.initialCount;
+  bool _busy = false;
+
+  Future<void> _onTap() async {
+    if (!ref.read(isSignedInProvider)) {
+      context.push(AppRoutes.login);
+      return;
+    }
+    if (_busy) return;
+
+    final wasLiked = _liked ?? false;
+    setState(() {
+      _busy = true;
+      _liked = !wasLiked;
+      _count += wasLiked ? -1 : 1;
+    });
+
+    final repo = ref.read(schemeDetailRepositoryProvider);
+    try {
+      if (wasLiked) {
+        await repo.unlike(widget.schemeId);
+      } else {
+        await repo.like(widget.schemeId);
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _liked = wasLiked;
+        _count -= wasLiked ? -1 : 1;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_messageFor(e))));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  // Same mapping as login_screen.dart's own _messageFor -- see there for
+  // why this isn't a shared ApiException.displayMessage extension (each
+  // screen's copy is deliberately its own, per the frontend architecture
+  // plan's error-handling section).
+  String _messageFor(ApiException error) {
+    return switch (error) {
+      ApiNetworkException() => 'No connection. Check your network and try again.',
+      ApiValidationException() => 'Please check the details below.',
+      ApiNotFoundException(:final message) => message,
+      ApiUnavailableException(:final message) => message,
+      ApiServerException(:final message) => message,
+      ApiUnknownException(:final message) => message,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final liked = _liked ?? false;
+    return Semantics(
+      label: 'likes: $_count${liked ? ', liked by you' : ''}',
+      button: true,
+      child: InkWell(
+        key: const ValueKey('scheme_detail_like_button'),
+        onTap: _onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                liked ? Icons.favorite : Icons.favorite_border,
+                size: AppSpacing.iconMd,
+                color: liked ? colors.brand : theme.colorScheme.outline,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'likes',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                  ),
+                  Text(
+                    '$_count',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: liked ? colors.brand : null,
+                      fontWeight: liked ? FontWeight.w600 : null,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -669,6 +804,259 @@ class _OfficialLink extends StatelessWidget {
         onPressed: () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication),
         icon: const Icon(Icons.open_in_new),
         label: const Text('Visit official page'),
+      ),
+    );
+  }
+}
+
+/// Public list + composer -- was entirely missing before (see the bug
+/// report this fixes: the backend's Comment table, counter trigger, and
+/// routes already existed, but nothing on this screen read or wrote to
+/// them). Listing works for every visitor; the composer only renders
+/// signed in, matching the honest signed-out pattern used elsewhere
+/// (Profile, Saved) rather than a fake input that fails on submit.
+class _CommentsSection extends ConsumerWidget {
+  const _CommentsSection({required this.schemeId});
+
+  final String schemeId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedIn = ref.watch(isSignedInProvider);
+    final commentsAsync = ref.watch(commentsProvider(schemeId));
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (signedIn)
+          _CommentComposer(schemeId: schemeId)
+        else
+          AppCard(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Sign in to ask a question or share your experience.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                TextButton(
+                  onPressed: () => context.push(AppRoutes.login),
+                  child: const Text('Sign in'),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: AppSpacing.md),
+        commentsAsync.when(
+          data: (comments) {
+            if (comments.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: Text(
+                  'No comments yet. Be the first to ask a question.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline),
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (final comment in comments) ...[
+                  _CommentRow(schemeId: schemeId, comment: comment),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+              ],
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (error, _) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Comments could not be loaded.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => ref.invalidate(commentsProvider(schemeId)),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CommentComposer extends ConsumerStatefulWidget {
+  const _CommentComposer({required this.schemeId});
+
+  final String schemeId;
+
+  @override
+  ConsumerState<_CommentComposer> createState() => _CommentComposerState();
+}
+
+class _CommentComposerState extends ConsumerState<_CommentComposer> {
+  final _controller = TextEditingController();
+  bool _posting = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final content = _controller.text.trim();
+    if (content.isEmpty || _posting) return;
+    setState(() => _posting = true);
+    try {
+      await ref.read(commentsProvider(widget.schemeId).notifier).post(content);
+      _controller.clear();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_messageFor(e))));
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
+  }
+
+  String _messageFor(ApiException error) {
+    return switch (error) {
+      ApiNetworkException() => 'No connection. Check your network and try again.',
+      ApiValidationException() => 'Please check your comment and try again.',
+      ApiNotFoundException(:final message) => message,
+      ApiUnavailableException(:final message) => message,
+      ApiServerException(:final message) => message,
+      ApiUnknownException(:final message) => message,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: TextField(
+            key: const ValueKey('scheme_detail_comment_field'),
+            controller: _controller,
+            minLines: 1,
+            maxLines: 4,
+            enabled: !_posting,
+            decoration: const InputDecoration(hintText: 'Ask a question or leave a comment…'),
+            onSubmitted: (_) => _submit(),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        IconButton.filled(
+          key: const ValueKey('scheme_detail_comment_send_button'),
+          onPressed: _posting ? null : _submit,
+          icon: _posting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.send),
+          tooltip: 'Post comment',
+        ),
+      ],
+    );
+  }
+}
+
+class _CommentRow extends ConsumerWidget {
+  const _CommentRow({required this.schemeId, required this.comment});
+
+  final String schemeId;
+  final SchemeComment comment;
+
+  // No date-formatting dependency in this app yet (see pubspec.yaml) --
+  // a short, dependency-free relative label is enough for a comment
+  // timestamp; anything past a week falls back to the plain ISO date.
+  String _relativeTime(String iso) {
+    final parsed = DateTime.tryParse(iso);
+    if (parsed == null) return iso;
+    final diff = DateTime.now().toUtc().difference(parsed.toUtc());
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(commentsProvider(schemeId).notifier).delete(comment.id);
+    } on ApiException catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not delete this comment.')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: colors.brandTint,
+                child: Text(
+                  (comment.authorName?.trim().isNotEmpty ?? false)
+                      ? comment.authorName!.trim()[0].toUpperCase()
+                      : '?',
+                  style: theme.textTheme.labelMedium?.copyWith(color: colors.brand),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      comment.authorName ?? 'A SchemeMedia user',
+                      style: theme.textTheme.labelLarge,
+                    ),
+                    Text(
+                      _relativeTime(comment.createdAt) + (comment.edited ? ' · edited' : ''),
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                    ),
+                  ],
+                ),
+              ),
+              if (comment.viewerIsAuthor)
+                IconButton(
+                  onPressed: () => _delete(context, ref),
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete your comment',
+                  iconSize: AppSpacing.iconMd,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(comment.content, style: theme.textTheme.bodyMedium),
+        ],
       ),
     );
   }

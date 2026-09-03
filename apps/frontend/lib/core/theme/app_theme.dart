@@ -120,8 +120,17 @@ abstract final class AppTheme {
             color: states.contains(WidgetState.selected) ? colors.brand : colors.textSecondary,
           ),
         ),
+        // Six destinations on a phone-width bar give each label only
+        // ~55-65dp -- at labelMedium's default 12sp, "Assistant" wraps to
+        // two lines (and squeezes every other item's share of the row
+        // with it). A dedicated, smaller size for just this bar -- not a
+        // blanket labelMedium change, which would also shrink chip/list
+        // text elsewhere -- keeps every destination on one line with
+        // proper room to breathe.
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => textTheme.labelMedium?.copyWith(
+            fontSize: 10.5,
+            letterSpacing: 0.1,
             color: states.contains(WidgetState.selected) ? colors.brand : colors.textSecondary,
             fontWeight: states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
           ),

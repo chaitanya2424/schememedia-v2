@@ -16,4 +16,20 @@ class SchemeDetailRepository {
       throw e.asApiException;
     }
   }
+
+  Future<void> like(String schemeId) async {
+    try {
+      await _api.like(schemeId);
+    } on DioException catch (e) {
+      throw e.asApiException;
+    }
+  }
+
+  Future<void> unlike(String schemeId) async {
+    try {
+      await _api.unlike(schemeId);
+    } on DioException catch (e) {
+      throw e.asApiException;
+    }
+  }
 }

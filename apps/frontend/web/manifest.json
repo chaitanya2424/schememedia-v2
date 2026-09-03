@@ -3,7 +3,7 @@
     "short_name": "SchemeMedia",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FFFFFF",
+    "background_color": "#F8F7F4",
     "theme_color": "#EA580C",
     "description": "Find Indian government welfare schemes you may be eligible for -- search, eligibility-ranked recommendations, and a grounded AI assistant.",
     "orientation": "portrait-primary",

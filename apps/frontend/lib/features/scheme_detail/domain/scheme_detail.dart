@@ -58,6 +58,8 @@ sealed class SchemeDetail with _$SchemeDetail {
     required int saveCount,
     required int commentCount,
     double? averageRating,
+    // null for a signed-out viewer -- not the same as false.
+    bool? viewerHasLiked,
   }) = _SchemeDetail;
 
   factory SchemeDetail.fromJson(Map<String, dynamic> json) => _$SchemeDetailFromJson(json);

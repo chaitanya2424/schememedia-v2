@@ -547,7 +547,8 @@ as bool,
 /// @nodoc
 mixin _$SchemeDetail {
 
- String get schemeId; String get slug; String get name; String? get nameHi; String? get ministry; String? get category;@SchemeTypeConverter() SchemeType get schemeType;@JurisdictionConverter() Jurisdiction get jurisdiction; String? get stateCode; String? get descriptionShort; String? get descriptionLong; String? get officialUrl; String? get applicationDeadline;@VerificationStatusConverter() VerificationStatus get verificationStatus; bool get needsReview; String? get lastVerifiedAt; List<String> get tags; List<Benefit> get benefits; List<SchemeDocument> get documents; int get likeCount; int get saveCount; int get commentCount; double? get averageRating;
+ String get schemeId; String get slug; String get name; String? get nameHi; String? get ministry; String? get category;@SchemeTypeConverter() SchemeType get schemeType;@JurisdictionConverter() Jurisdiction get jurisdiction; String? get stateCode; String? get descriptionShort; String? get descriptionLong; String? get officialUrl; String? get applicationDeadline;@VerificationStatusConverter() VerificationStatus get verificationStatus; bool get needsReview; String? get lastVerifiedAt; List<String> get tags; List<Benefit> get benefits; List<SchemeDocument> get documents; int get likeCount; int get saveCount; int get commentCount; double? get averageRating;// null for a signed-out viewer -- not the same as false.
+ bool? get viewerHasLiked;
 /// Create a copy of SchemeDetail
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -560,16 +561,16 @@ $SchemeDetailCopyWith<SchemeDetail> get copyWith => _$SchemeDetailCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SchemeDetail&&(identical(other.schemeId, schemeId) || other.schemeId == schemeId)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.nameHi, nameHi) || other.nameHi == nameHi)&&(identical(other.ministry, ministry) || other.ministry == ministry)&&(identical(other.category, category) || other.category == category)&&(identical(other.schemeType, schemeType) || other.schemeType == schemeType)&&(identical(other.jurisdiction, jurisdiction) || other.jurisdiction == jurisdiction)&&(identical(other.stateCode, stateCode) || other.stateCode == stateCode)&&(identical(other.descriptionShort, descriptionShort) || other.descriptionShort == descriptionShort)&&(identical(other.descriptionLong, descriptionLong) || other.descriptionLong == descriptionLong)&&(identical(other.officialUrl, officialUrl) || other.officialUrl == officialUrl)&&(identical(other.applicationDeadline, applicationDeadline) || other.applicationDeadline == applicationDeadline)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus)&&(identical(other.needsReview, needsReview) || other.needsReview == needsReview)&&(identical(other.lastVerifiedAt, lastVerifiedAt) || other.lastVerifiedAt == lastVerifiedAt)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.benefits, benefits)&&const DeepCollectionEquality().equals(other.documents, documents)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.saveCount, saveCount) || other.saveCount == saveCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.averageRating, averageRating) || other.averageRating == averageRating));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SchemeDetail&&(identical(other.schemeId, schemeId) || other.schemeId == schemeId)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.nameHi, nameHi) || other.nameHi == nameHi)&&(identical(other.ministry, ministry) || other.ministry == ministry)&&(identical(other.category, category) || other.category == category)&&(identical(other.schemeType, schemeType) || other.schemeType == schemeType)&&(identical(other.jurisdiction, jurisdiction) || other.jurisdiction == jurisdiction)&&(identical(other.stateCode, stateCode) || other.stateCode == stateCode)&&(identical(other.descriptionShort, descriptionShort) || other.descriptionShort == descriptionShort)&&(identical(other.descriptionLong, descriptionLong) || other.descriptionLong == descriptionLong)&&(identical(other.officialUrl, officialUrl) || other.officialUrl == officialUrl)&&(identical(other.applicationDeadline, applicationDeadline) || other.applicationDeadline == applicationDeadline)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus)&&(identical(other.needsReview, needsReview) || other.needsReview == needsReview)&&(identical(other.lastVerifiedAt, lastVerifiedAt) || other.lastVerifiedAt == lastVerifiedAt)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.benefits, benefits)&&const DeepCollectionEquality().equals(other.documents, documents)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.saveCount, saveCount) || other.saveCount == saveCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.averageRating, averageRating) || other.averageRating == averageRating)&&(identical(other.viewerHasLiked, viewerHasLiked) || other.viewerHasLiked == viewerHasLiked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,schemeId,slug,name,nameHi,ministry,category,schemeType,jurisdiction,stateCode,descriptionShort,descriptionLong,officialUrl,applicationDeadline,verificationStatus,needsReview,lastVerifiedAt,const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(benefits),const DeepCollectionEquality().hash(documents),likeCount,saveCount,commentCount,averageRating]);
+int get hashCode => Object.hashAll([runtimeType,schemeId,slug,name,nameHi,ministry,category,schemeType,jurisdiction,stateCode,descriptionShort,descriptionLong,officialUrl,applicationDeadline,verificationStatus,needsReview,lastVerifiedAt,const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(benefits),const DeepCollectionEquality().hash(documents),likeCount,saveCount,commentCount,averageRating,viewerHasLiked]);
 
 @override
 String toString() {
-  return 'SchemeDetail(schemeId: $schemeId, slug: $slug, name: $name, nameHi: $nameHi, ministry: $ministry, category: $category, schemeType: $schemeType, jurisdiction: $jurisdiction, stateCode: $stateCode, descriptionShort: $descriptionShort, descriptionLong: $descriptionLong, officialUrl: $officialUrl, applicationDeadline: $applicationDeadline, verificationStatus: $verificationStatus, needsReview: $needsReview, lastVerifiedAt: $lastVerifiedAt, tags: $tags, benefits: $benefits, documents: $documents, likeCount: $likeCount, saveCount: $saveCount, commentCount: $commentCount, averageRating: $averageRating)';
+  return 'SchemeDetail(schemeId: $schemeId, slug: $slug, name: $name, nameHi: $nameHi, ministry: $ministry, category: $category, schemeType: $schemeType, jurisdiction: $jurisdiction, stateCode: $stateCode, descriptionShort: $descriptionShort, descriptionLong: $descriptionLong, officialUrl: $officialUrl, applicationDeadline: $applicationDeadline, verificationStatus: $verificationStatus, needsReview: $needsReview, lastVerifiedAt: $lastVerifiedAt, tags: $tags, benefits: $benefits, documents: $documents, likeCount: $likeCount, saveCount: $saveCount, commentCount: $commentCount, averageRating: $averageRating, viewerHasLiked: $viewerHasLiked)';
 }
 
 
@@ -580,7 +581,7 @@ abstract mixin class $SchemeDetailCopyWith<$Res>  {
   factory $SchemeDetailCopyWith(SchemeDetail value, $Res Function(SchemeDetail) _then) = _$SchemeDetailCopyWithImpl;
 @useResult
 $Res call({
- String schemeId, String slug, String name, String? nameHi, String? ministry, String? category,@SchemeTypeConverter() SchemeType schemeType,@JurisdictionConverter() Jurisdiction jurisdiction, String? stateCode, String? descriptionShort, String? descriptionLong, String? officialUrl, String? applicationDeadline,@VerificationStatusConverter() VerificationStatus verificationStatus, bool needsReview, String? lastVerifiedAt, List<String> tags, List<Benefit> benefits, List<SchemeDocument> documents, int likeCount, int saveCount, int commentCount, double? averageRating
+ String schemeId, String slug, String name, String? nameHi, String? ministry, String? category,@SchemeTypeConverter() SchemeType schemeType,@JurisdictionConverter() Jurisdiction jurisdiction, String? stateCode, String? descriptionShort, String? descriptionLong, String? officialUrl, String? applicationDeadline,@VerificationStatusConverter() VerificationStatus verificationStatus, bool needsReview, String? lastVerifiedAt, List<String> tags, List<Benefit> benefits, List<SchemeDocument> documents, int likeCount, int saveCount, int commentCount, double? averageRating, bool? viewerHasLiked
 });
 
 
@@ -597,7 +598,7 @@ class _$SchemeDetailCopyWithImpl<$Res>
 
 /// Create a copy of SchemeDetail
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? schemeId = null,Object? slug = null,Object? name = null,Object? nameHi = freezed,Object? ministry = freezed,Object? category = freezed,Object? schemeType = null,Object? jurisdiction = null,Object? stateCode = freezed,Object? descriptionShort = freezed,Object? descriptionLong = freezed,Object? officialUrl = freezed,Object? applicationDeadline = freezed,Object? verificationStatus = null,Object? needsReview = null,Object? lastVerifiedAt = freezed,Object? tags = null,Object? benefits = null,Object? documents = null,Object? likeCount = null,Object? saveCount = null,Object? commentCount = null,Object? averageRating = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? schemeId = null,Object? slug = null,Object? name = null,Object? nameHi = freezed,Object? ministry = freezed,Object? category = freezed,Object? schemeType = null,Object? jurisdiction = null,Object? stateCode = freezed,Object? descriptionShort = freezed,Object? descriptionLong = freezed,Object? officialUrl = freezed,Object? applicationDeadline = freezed,Object? verificationStatus = null,Object? needsReview = null,Object? lastVerifiedAt = freezed,Object? tags = null,Object? benefits = null,Object? documents = null,Object? likeCount = null,Object? saveCount = null,Object? commentCount = null,Object? averageRating = freezed,Object? viewerHasLiked = freezed,}) {
   return _then(_self.copyWith(
 schemeId: null == schemeId ? _self.schemeId : schemeId // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -622,7 +623,8 @@ as List<SchemeDocument>,likeCount: null == likeCount ? _self.likeCount : likeCou
 as int,saveCount: null == saveCount ? _self.saveCount : saveCount // ignore: cast_nullable_to_non_nullable
 as int,commentCount: null == commentCount ? _self.commentCount : commentCount // ignore: cast_nullable_to_non_nullable
 as int,averageRating: freezed == averageRating ? _self.averageRating : averageRating // ignore: cast_nullable_to_non_nullable
-as double?,
+as double?,viewerHasLiked: freezed == viewerHasLiked ? _self.viewerHasLiked : viewerHasLiked // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 
@@ -704,10 +706,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String schemeId,  String slug,  String name,  String? nameHi,  String? ministry,  String? category, @SchemeTypeConverter()  SchemeType schemeType, @JurisdictionConverter()  Jurisdiction jurisdiction,  String? stateCode,  String? descriptionShort,  String? descriptionLong,  String? officialUrl,  String? applicationDeadline, @VerificationStatusConverter()  VerificationStatus verificationStatus,  bool needsReview,  String? lastVerifiedAt,  List<String> tags,  List<Benefit> benefits,  List<SchemeDocument> documents,  int likeCount,  int saveCount,  int commentCount,  double? averageRating)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String schemeId,  String slug,  String name,  String? nameHi,  String? ministry,  String? category, @SchemeTypeConverter()  SchemeType schemeType, @JurisdictionConverter()  Jurisdiction jurisdiction,  String? stateCode,  String? descriptionShort,  String? descriptionLong,  String? officialUrl,  String? applicationDeadline, @VerificationStatusConverter()  VerificationStatus verificationStatus,  bool needsReview,  String? lastVerifiedAt,  List<String> tags,  List<Benefit> benefits,  List<SchemeDocument> documents,  int likeCount,  int saveCount,  int commentCount,  double? averageRating,  bool? viewerHasLiked)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SchemeDetail() when $default != null:
-return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry,_that.category,_that.schemeType,_that.jurisdiction,_that.stateCode,_that.descriptionShort,_that.descriptionLong,_that.officialUrl,_that.applicationDeadline,_that.verificationStatus,_that.needsReview,_that.lastVerifiedAt,_that.tags,_that.benefits,_that.documents,_that.likeCount,_that.saveCount,_that.commentCount,_that.averageRating);case _:
+return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry,_that.category,_that.schemeType,_that.jurisdiction,_that.stateCode,_that.descriptionShort,_that.descriptionLong,_that.officialUrl,_that.applicationDeadline,_that.verificationStatus,_that.needsReview,_that.lastVerifiedAt,_that.tags,_that.benefits,_that.documents,_that.likeCount,_that.saveCount,_that.commentCount,_that.averageRating,_that.viewerHasLiked);case _:
   return orElse();
 
 }
@@ -725,10 +727,10 @@ return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String schemeId,  String slug,  String name,  String? nameHi,  String? ministry,  String? category, @SchemeTypeConverter()  SchemeType schemeType, @JurisdictionConverter()  Jurisdiction jurisdiction,  String? stateCode,  String? descriptionShort,  String? descriptionLong,  String? officialUrl,  String? applicationDeadline, @VerificationStatusConverter()  VerificationStatus verificationStatus,  bool needsReview,  String? lastVerifiedAt,  List<String> tags,  List<Benefit> benefits,  List<SchemeDocument> documents,  int likeCount,  int saveCount,  int commentCount,  double? averageRating)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String schemeId,  String slug,  String name,  String? nameHi,  String? ministry,  String? category, @SchemeTypeConverter()  SchemeType schemeType, @JurisdictionConverter()  Jurisdiction jurisdiction,  String? stateCode,  String? descriptionShort,  String? descriptionLong,  String? officialUrl,  String? applicationDeadline, @VerificationStatusConverter()  VerificationStatus verificationStatus,  bool needsReview,  String? lastVerifiedAt,  List<String> tags,  List<Benefit> benefits,  List<SchemeDocument> documents,  int likeCount,  int saveCount,  int commentCount,  double? averageRating,  bool? viewerHasLiked)  $default,) {final _that = this;
 switch (_that) {
 case _SchemeDetail():
-return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry,_that.category,_that.schemeType,_that.jurisdiction,_that.stateCode,_that.descriptionShort,_that.descriptionLong,_that.officialUrl,_that.applicationDeadline,_that.verificationStatus,_that.needsReview,_that.lastVerifiedAt,_that.tags,_that.benefits,_that.documents,_that.likeCount,_that.saveCount,_that.commentCount,_that.averageRating);}
+return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry,_that.category,_that.schemeType,_that.jurisdiction,_that.stateCode,_that.descriptionShort,_that.descriptionLong,_that.officialUrl,_that.applicationDeadline,_that.verificationStatus,_that.needsReview,_that.lastVerifiedAt,_that.tags,_that.benefits,_that.documents,_that.likeCount,_that.saveCount,_that.commentCount,_that.averageRating,_that.viewerHasLiked);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -742,10 +744,10 @@ return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String schemeId,  String slug,  String name,  String? nameHi,  String? ministry,  String? category, @SchemeTypeConverter()  SchemeType schemeType, @JurisdictionConverter()  Jurisdiction jurisdiction,  String? stateCode,  String? descriptionShort,  String? descriptionLong,  String? officialUrl,  String? applicationDeadline, @VerificationStatusConverter()  VerificationStatus verificationStatus,  bool needsReview,  String? lastVerifiedAt,  List<String> tags,  List<Benefit> benefits,  List<SchemeDocument> documents,  int likeCount,  int saveCount,  int commentCount,  double? averageRating)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String schemeId,  String slug,  String name,  String? nameHi,  String? ministry,  String? category, @SchemeTypeConverter()  SchemeType schemeType, @JurisdictionConverter()  Jurisdiction jurisdiction,  String? stateCode,  String? descriptionShort,  String? descriptionLong,  String? officialUrl,  String? applicationDeadline, @VerificationStatusConverter()  VerificationStatus verificationStatus,  bool needsReview,  String? lastVerifiedAt,  List<String> tags,  List<Benefit> benefits,  List<SchemeDocument> documents,  int likeCount,  int saveCount,  int commentCount,  double? averageRating,  bool? viewerHasLiked)?  $default,) {final _that = this;
 switch (_that) {
 case _SchemeDetail() when $default != null:
-return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry,_that.category,_that.schemeType,_that.jurisdiction,_that.stateCode,_that.descriptionShort,_that.descriptionLong,_that.officialUrl,_that.applicationDeadline,_that.verificationStatus,_that.needsReview,_that.lastVerifiedAt,_that.tags,_that.benefits,_that.documents,_that.likeCount,_that.saveCount,_that.commentCount,_that.averageRating);case _:
+return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry,_that.category,_that.schemeType,_that.jurisdiction,_that.stateCode,_that.descriptionShort,_that.descriptionLong,_that.officialUrl,_that.applicationDeadline,_that.verificationStatus,_that.needsReview,_that.lastVerifiedAt,_that.tags,_that.benefits,_that.documents,_that.likeCount,_that.saveCount,_that.commentCount,_that.averageRating,_that.viewerHasLiked);case _:
   return null;
 
 }
@@ -757,7 +759,7 @@ return $default(_that.schemeId,_that.slug,_that.name,_that.nameHi,_that.ministry
 @JsonSerializable()
 
 class _SchemeDetail implements SchemeDetail {
-  const _SchemeDetail({required this.schemeId, required this.slug, required this.name, this.nameHi, this.ministry, this.category, @SchemeTypeConverter() required this.schemeType, @JurisdictionConverter() required this.jurisdiction, this.stateCode, this.descriptionShort, this.descriptionLong, this.officialUrl, this.applicationDeadline, @VerificationStatusConverter() required this.verificationStatus, required this.needsReview, this.lastVerifiedAt, required final  List<String> tags, required final  List<Benefit> benefits, required final  List<SchemeDocument> documents, required this.likeCount, required this.saveCount, required this.commentCount, this.averageRating}): _tags = tags,_benefits = benefits,_documents = documents;
+  const _SchemeDetail({required this.schemeId, required this.slug, required this.name, this.nameHi, this.ministry, this.category, @SchemeTypeConverter() required this.schemeType, @JurisdictionConverter() required this.jurisdiction, this.stateCode, this.descriptionShort, this.descriptionLong, this.officialUrl, this.applicationDeadline, @VerificationStatusConverter() required this.verificationStatus, required this.needsReview, this.lastVerifiedAt, required final  List<String> tags, required final  List<Benefit> benefits, required final  List<SchemeDocument> documents, required this.likeCount, required this.saveCount, required this.commentCount, this.averageRating, this.viewerHasLiked}): _tags = tags,_benefits = benefits,_documents = documents;
   factory _SchemeDetail.fromJson(Map<String, dynamic> json) => _$SchemeDetailFromJson(json);
 
 @override final  String schemeId;
@@ -801,6 +803,8 @@ class _SchemeDetail implements SchemeDetail {
 @override final  int saveCount;
 @override final  int commentCount;
 @override final  double? averageRating;
+// null for a signed-out viewer -- not the same as false.
+@override final  bool? viewerHasLiked;
 
 /// Create a copy of SchemeDetail
 /// with the given fields replaced by the non-null parameter values.
@@ -815,16 +819,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SchemeDetail&&(identical(other.schemeId, schemeId) || other.schemeId == schemeId)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.nameHi, nameHi) || other.nameHi == nameHi)&&(identical(other.ministry, ministry) || other.ministry == ministry)&&(identical(other.category, category) || other.category == category)&&(identical(other.schemeType, schemeType) || other.schemeType == schemeType)&&(identical(other.jurisdiction, jurisdiction) || other.jurisdiction == jurisdiction)&&(identical(other.stateCode, stateCode) || other.stateCode == stateCode)&&(identical(other.descriptionShort, descriptionShort) || other.descriptionShort == descriptionShort)&&(identical(other.descriptionLong, descriptionLong) || other.descriptionLong == descriptionLong)&&(identical(other.officialUrl, officialUrl) || other.officialUrl == officialUrl)&&(identical(other.applicationDeadline, applicationDeadline) || other.applicationDeadline == applicationDeadline)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus)&&(identical(other.needsReview, needsReview) || other.needsReview == needsReview)&&(identical(other.lastVerifiedAt, lastVerifiedAt) || other.lastVerifiedAt == lastVerifiedAt)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._benefits, _benefits)&&const DeepCollectionEquality().equals(other._documents, _documents)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.saveCount, saveCount) || other.saveCount == saveCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.averageRating, averageRating) || other.averageRating == averageRating));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SchemeDetail&&(identical(other.schemeId, schemeId) || other.schemeId == schemeId)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.nameHi, nameHi) || other.nameHi == nameHi)&&(identical(other.ministry, ministry) || other.ministry == ministry)&&(identical(other.category, category) || other.category == category)&&(identical(other.schemeType, schemeType) || other.schemeType == schemeType)&&(identical(other.jurisdiction, jurisdiction) || other.jurisdiction == jurisdiction)&&(identical(other.stateCode, stateCode) || other.stateCode == stateCode)&&(identical(other.descriptionShort, descriptionShort) || other.descriptionShort == descriptionShort)&&(identical(other.descriptionLong, descriptionLong) || other.descriptionLong == descriptionLong)&&(identical(other.officialUrl, officialUrl) || other.officialUrl == officialUrl)&&(identical(other.applicationDeadline, applicationDeadline) || other.applicationDeadline == applicationDeadline)&&(identical(other.verificationStatus, verificationStatus) || other.verificationStatus == verificationStatus)&&(identical(other.needsReview, needsReview) || other.needsReview == needsReview)&&(identical(other.lastVerifiedAt, lastVerifiedAt) || other.lastVerifiedAt == lastVerifiedAt)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._benefits, _benefits)&&const DeepCollectionEquality().equals(other._documents, _documents)&&(identical(other.likeCount, likeCount) || other.likeCount == likeCount)&&(identical(other.saveCount, saveCount) || other.saveCount == saveCount)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.averageRating, averageRating) || other.averageRating == averageRating)&&(identical(other.viewerHasLiked, viewerHasLiked) || other.viewerHasLiked == viewerHasLiked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,schemeId,slug,name,nameHi,ministry,category,schemeType,jurisdiction,stateCode,descriptionShort,descriptionLong,officialUrl,applicationDeadline,verificationStatus,needsReview,lastVerifiedAt,const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_benefits),const DeepCollectionEquality().hash(_documents),likeCount,saveCount,commentCount,averageRating]);
+int get hashCode => Object.hashAll([runtimeType,schemeId,slug,name,nameHi,ministry,category,schemeType,jurisdiction,stateCode,descriptionShort,descriptionLong,officialUrl,applicationDeadline,verificationStatus,needsReview,lastVerifiedAt,const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_benefits),const DeepCollectionEquality().hash(_documents),likeCount,saveCount,commentCount,averageRating,viewerHasLiked]);
 
 @override
 String toString() {
-  return 'SchemeDetail(schemeId: $schemeId, slug: $slug, name: $name, nameHi: $nameHi, ministry: $ministry, category: $category, schemeType: $schemeType, jurisdiction: $jurisdiction, stateCode: $stateCode, descriptionShort: $descriptionShort, descriptionLong: $descriptionLong, officialUrl: $officialUrl, applicationDeadline: $applicationDeadline, verificationStatus: $verificationStatus, needsReview: $needsReview, lastVerifiedAt: $lastVerifiedAt, tags: $tags, benefits: $benefits, documents: $documents, likeCount: $likeCount, saveCount: $saveCount, commentCount: $commentCount, averageRating: $averageRating)';
+  return 'SchemeDetail(schemeId: $schemeId, slug: $slug, name: $name, nameHi: $nameHi, ministry: $ministry, category: $category, schemeType: $schemeType, jurisdiction: $jurisdiction, stateCode: $stateCode, descriptionShort: $descriptionShort, descriptionLong: $descriptionLong, officialUrl: $officialUrl, applicationDeadline: $applicationDeadline, verificationStatus: $verificationStatus, needsReview: $needsReview, lastVerifiedAt: $lastVerifiedAt, tags: $tags, benefits: $benefits, documents: $documents, likeCount: $likeCount, saveCount: $saveCount, commentCount: $commentCount, averageRating: $averageRating, viewerHasLiked: $viewerHasLiked)';
 }
 
 
@@ -835,7 +839,7 @@ abstract mixin class _$SchemeDetailCopyWith<$Res> implements $SchemeDetailCopyWi
   factory _$SchemeDetailCopyWith(_SchemeDetail value, $Res Function(_SchemeDetail) _then) = __$SchemeDetailCopyWithImpl;
 @override @useResult
 $Res call({
- String schemeId, String slug, String name, String? nameHi, String? ministry, String? category,@SchemeTypeConverter() SchemeType schemeType,@JurisdictionConverter() Jurisdiction jurisdiction, String? stateCode, String? descriptionShort, String? descriptionLong, String? officialUrl, String? applicationDeadline,@VerificationStatusConverter() VerificationStatus verificationStatus, bool needsReview, String? lastVerifiedAt, List<String> tags, List<Benefit> benefits, List<SchemeDocument> documents, int likeCount, int saveCount, int commentCount, double? averageRating
+ String schemeId, String slug, String name, String? nameHi, String? ministry, String? category,@SchemeTypeConverter() SchemeType schemeType,@JurisdictionConverter() Jurisdiction jurisdiction, String? stateCode, String? descriptionShort, String? descriptionLong, String? officialUrl, String? applicationDeadline,@VerificationStatusConverter() VerificationStatus verificationStatus, bool needsReview, String? lastVerifiedAt, List<String> tags, List<Benefit> benefits, List<SchemeDocument> documents, int likeCount, int saveCount, int commentCount, double? averageRating, bool? viewerHasLiked
 });
 
 
@@ -852,7 +856,7 @@ class __$SchemeDetailCopyWithImpl<$Res>
 
 /// Create a copy of SchemeDetail
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? schemeId = null,Object? slug = null,Object? name = null,Object? nameHi = freezed,Object? ministry = freezed,Object? category = freezed,Object? schemeType = null,Object? jurisdiction = null,Object? stateCode = freezed,Object? descriptionShort = freezed,Object? descriptionLong = freezed,Object? officialUrl = freezed,Object? applicationDeadline = freezed,Object? verificationStatus = null,Object? needsReview = null,Object? lastVerifiedAt = freezed,Object? tags = null,Object? benefits = null,Object? documents = null,Object? likeCount = null,Object? saveCount = null,Object? commentCount = null,Object? averageRating = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? schemeId = null,Object? slug = null,Object? name = null,Object? nameHi = freezed,Object? ministry = freezed,Object? category = freezed,Object? schemeType = null,Object? jurisdiction = null,Object? stateCode = freezed,Object? descriptionShort = freezed,Object? descriptionLong = freezed,Object? officialUrl = freezed,Object? applicationDeadline = freezed,Object? verificationStatus = null,Object? needsReview = null,Object? lastVerifiedAt = freezed,Object? tags = null,Object? benefits = null,Object? documents = null,Object? likeCount = null,Object? saveCount = null,Object? commentCount = null,Object? averageRating = freezed,Object? viewerHasLiked = freezed,}) {
   return _then(_SchemeDetail(
 schemeId: null == schemeId ? _self.schemeId : schemeId // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -877,7 +881,8 @@ as List<SchemeDocument>,likeCount: null == likeCount ? _self.likeCount : likeCou
 as int,saveCount: null == saveCount ? _self.saveCount : saveCount // ignore: cast_nullable_to_non_nullable
 as int,commentCount: null == commentCount ? _self.commentCount : commentCount // ignore: cast_nullable_to_non_nullable
 as int,averageRating: freezed == averageRating ? _self.averageRating : averageRating // ignore: cast_nullable_to_non_nullable
-as double?,
+as double?,viewerHasLiked: freezed == viewerHasLiked ? _self.viewerHasLiked : viewerHasLiked // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 

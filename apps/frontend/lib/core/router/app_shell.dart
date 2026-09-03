@@ -74,6 +74,13 @@ class AppShell extends StatelessWidget {
         child: NavigationBar(
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: _onSelect,
+          // Six items on a phone-width bar leaves each label only
+          // ~55-65dp -- at the default (M3) 12sp label size "Assistant"
+          // wraps to two lines, which then squeezes every other item's
+          // share of the row too. NavigationDestination.label is a plain
+          // String (no widget slot to auto-shrink), so the fix is the
+          // smaller labelTextStyle on navigationBarTheme below, in
+          // AppTheme -- see its own comment.
           destinations: [
             for (final d in _destinations)
               NavigationDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selectedIcon), label: d.label),
