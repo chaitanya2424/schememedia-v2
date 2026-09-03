@@ -38,7 +38,13 @@ class RecommendationsScreen extends ConsumerWidget {
             child: const Padding(padding: EdgeInsets.all(AppSpacing.lg), child: _ResultsSkeleton()),
           ),
           data: (context, response) {
-            if (response == null) return const RecommendationsWizard();
+            if (response == null) {
+              // A one-question-at-a-time flow shouldn't stretch
+              // edge-to-edge just because the viewport can -- narrower
+              // than the default reading width, unlike every other
+              // ResponsiveContainer usage in the app.
+              return const ResponsiveContainer(maxWidth: 600, child: RecommendationsWizard());
+            }
             return ResponsiveContainer(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.lg),

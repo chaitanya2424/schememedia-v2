@@ -25,7 +25,7 @@ final onboardingRepositoryProvider = Provider<OnboardingRepository>((ref) {
 /// Defaults to "seen" (true) when local storage isn't available (e.g. a
 /// widget test's bare ProviderContainer) -- degrades to "don't force
 /// onboarding" rather than throwing, same pattern as
-/// SavedSchemeIdsNotifier.
+/// SavedSchemesNotifier.
 class HasSeenOnboardingNotifier extends Notifier<bool> {
   @override
   bool build() {

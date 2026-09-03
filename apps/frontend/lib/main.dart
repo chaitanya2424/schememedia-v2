@@ -11,8 +11,9 @@ Future<void> main() async {
   // schemes, preferences), not something the whole app should hang
   // behind forever if it's ever slow or unavailable. If this fails or
   // times out, sharedPreferencesProvider is left un-overridden --
-  // SavedSchemeIdsNotifier already degrades to in-memory-only rather
-  // than throwing in that case.
+  // SavedSchemesNotifier, ThemeModeNotifier, and HasSeenOnboardingNotifier
+  // all already degrade to in-memory-only/default rather than throwing
+  // in that case.
   SharedPreferences? prefs;
   try {
     prefs = await SharedPreferences.getInstance().timeout(const Duration(seconds: 3));
