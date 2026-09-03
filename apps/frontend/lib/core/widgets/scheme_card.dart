@@ -46,6 +46,8 @@ class SchemeCard extends ConsumerWidget {
     this.benefitHighlight,
     required this.onTap,
     this.ctaLabel = 'View details',
+    this.onSecondaryTap,
+    this.secondaryLabel,
     this.trailing,
   });
 
@@ -74,6 +76,15 @@ class SchemeCard extends ConsumerWidget {
   final BenefitHighlight? benefitHighlight;
   final VoidCallback onTap;
   final String ctaLabel;
+
+  /// When given (For You/Home's eligibility-aware cards), renders a
+  /// second, secondary-styled button alongside the primary one -- e.g.
+  /// "See eligibility" (primary, jumps to Scheme Detail's eligibility
+  /// section) + "Details" (secondary, lands at the top). Null on
+  /// Explore's plain cards, which have no eligibility section to jump to.
+  final VoidCallback? onSecondaryTap;
+  final String? secondaryLabel;
+
   final Widget? trailing;
 
   @override
@@ -144,11 +155,28 @@ class SchemeCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          FilledButton.icon(
-            onPressed: onTap,
-            icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
-            label: Text(ctaLabel),
-          ),
+          if (onSecondaryTap != null && secondaryLabel != null)
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: onTap,
+                    icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
+                    label: Text(ctaLabel),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton(onPressed: onSecondaryTap, child: Text(secondaryLabel!)),
+                ),
+              ],
+            )
+          else
+            FilledButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
+              label: Text(ctaLabel),
+            ),
           if (trailing != null) ...[const SizedBox(height: AppSpacing.xs), trailing!],
         ],
       ),

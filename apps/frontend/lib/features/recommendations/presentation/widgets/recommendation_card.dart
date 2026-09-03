@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/widgets/scheme_card.dart';
 import '../../../../core/widgets/status_pill.dart';
+import '../../../scheme_detail/domain/scheme_detail_args.dart';
 import '../../domain/recommendation.dart';
 
 /// One ranked recommendation: maps onto the shared [SchemeCard], with the
@@ -44,8 +45,16 @@ class _RecommendationCardState extends State<RecommendationCard> {
         verificationStatus: rec.verificationStatus,
         needsReview: rec.needsReview,
         eligibilityState: rec.eligibilityState,
-        onTap: () => context.push(AppRoutes.schemeDetailPath(rec.schemeId)),
+        onTap: () => context.push(
+          AppRoutes.schemeDetailPath(rec.schemeId),
+          extra: SchemeDetailArgs(eligibilityRules: rec.eligibilityRules, scrollToEligibility: true),
+        ),
         ctaLabel: 'See eligibility',
+        onSecondaryTap: () => context.push(
+          AppRoutes.schemeDetailPath(rec.schemeId),
+          extra: SchemeDetailArgs(eligibilityRules: rec.eligibilityRules),
+        ),
+        secondaryLabel: 'Details',
         trailing: rec.eligibilityRules.isEmpty
             ? null
             : _RuleSection(

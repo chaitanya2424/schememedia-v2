@@ -9,6 +9,7 @@ import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/recommendations/presentation/screens/recommendations_screen.dart';
 import '../../features/saved/presentation/screens/saved_screen.dart';
+import '../../features/scheme_detail/domain/scheme_detail_args.dart';
 import '../../features/scheme_detail/presentation/screens/scheme_detail_screen.dart';
 import '../../features/search/presentation/screens/search_results_screen.dart';
 import '../local/onboarding_repository.dart';
@@ -104,8 +105,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.schemeDetail,
         name: AppRouteNames.schemeDetail,
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) =>
-            SchemeDetailScreen(identifier: state.pathParameters['identifier']!),
+        builder: (context, state) => SchemeDetailScreen(
+          identifier: state.pathParameters['identifier']!,
+          args: state.extra as SchemeDetailArgs?,
+        ),
       ),
       GoRoute(
         path: AppRoutes.onboarding,

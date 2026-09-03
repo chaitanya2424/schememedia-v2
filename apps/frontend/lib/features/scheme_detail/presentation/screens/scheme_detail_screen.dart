@@ -1,32 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/domain/enums.dart';
+import '../../../../core/router/routes.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/async_value_view.dart';
+import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
 import '../../../../core/widgets/verification_badge.dart';
+import '../../../recommendations/domain/recommendation.dart';
+import '../../../recommendations/presentation/providers/recommendations_providers.dart';
 import '../../domain/scheme_detail.dart';
+import '../../domain/scheme_detail_args.dart';
 import '../providers/scheme_detail_providers.dart';
 
-/// Screen 3 of the build order. Renders the full `SchemeDetailOut`: header,
-/// ministry/jurisdiction/category, benefits (flagging truncated ones),
-/// documents (flagging needs_review), tags, and the official link -- *or*
-/// an explicit "no official link available" (never silently omitted,
-/// matching the backend/assistant's own honesty rule). Like/save/rating
-/// counts are read-only: no auth yet, so no write actions.
-class SchemeDetailScreen extends ConsumerWidget {
-  const SchemeDetailScreen({super.key, required this.identifier});
+/// Screen 3 of the build order. Renders the full `SchemeDetailOut` plus,
+/// when reached from an eligibility-aware card (For You/Home --
+/// see [SchemeDetailArgs]), a real "Why this looks promising" summary and
+/// an "Eligibility, explained" rule list -- never fabricated when that
+/// context is absent (Explore's plain cards, the assistant's evidence).
+class SchemeDetailScreen extends ConsumerStatefulWidget {
+  const SchemeDetailScreen({super.key, required this.identifier, this.args});
 
   final String identifier;
+  final SchemeDetailArgs? args;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detailAsync = ref.watch(schemeDetailProvider(identifier));
+  ConsumerState<SchemeDetailScreen> createState() => _SchemeDetailScreenState();
+}
+
+class _SchemeDetailScreenState extends ConsumerState<SchemeDetailScreen> {
+  final _eligibilityKey = GlobalKey();
+  bool _hasScrolled = false;
+
+  void _maybeScrollToEligibility() {
+    if (_hasScrolled || widget.args?.scrollToEligibility != true) return;
+    final context = _eligibilityKey.currentContext;
+    if (context == null) return;
+    _hasScrolled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Scrollable.ensureVisible(context, duration: AppSpacing.durationMedium, curve: Curves.easeOut);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detailAsync = ref.watch(schemeDetailProvider(widget.identifier));
     // The scheme's own name, once loaded, instead of the generic literal
     // "Scheme details" the AppBar previously always showed -- watched
     // independently of the body below so the title updates the moment
@@ -40,9 +65,16 @@ class SchemeDetailScreen extends ConsumerWidget {
           maxWidth: AppSpacing.maxWideContentWidth,
           child: AsyncValueView<SchemeDetail>(
             value: detailAsync,
-            onRetry: () => ref.invalidate(schemeDetailProvider(identifier)),
+            onRetry: () => ref.invalidate(schemeDetailProvider(widget.identifier)),
             loadingBuilder: (context) => const _DetailSkeleton(),
-            data: (context, detail) => _DetailBody(detail: detail),
+            data: (context, detail) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => _maybeScrollToEligibility());
+              return _DetailBody(
+                detail: detail,
+                eligibilityRules: widget.args?.eligibilityRules,
+                eligibilityKey: _eligibilityKey,
+              );
+            },
           ),
         ),
       ),
@@ -71,14 +103,21 @@ class _DetailSkeleton extends StatelessWidget {
 }
 
 class _DetailBody extends StatelessWidget {
-  const _DetailBody({required this.detail});
+  const _DetailBody({required this.detail, required this.eligibilityRules, required this.eligibilityKey});
 
   final SchemeDetail detail;
+  final List<EligibilityRule>? eligibilityRules;
+  final GlobalKey eligibilityKey;
 
   @override
   Widget build(BuildContext context) {
     final wide = Breakpoints.of(context) == ScreenSize.wide;
-    final primary = _PrimaryColumn(detail: detail, includeKeyFacts: !wide);
+    final primary = _PrimaryColumn(
+      detail: detail,
+      eligibilityRules: eligibilityRules,
+      eligibilityKey: eligibilityKey,
+      includeKeyFacts: !wide,
+    );
 
     if (!wide) {
       return ListView(padding: const EdgeInsets.all(AppSpacing.lg), children: [primary]);
@@ -101,9 +140,16 @@ class _DetailBody extends StatelessWidget {
 }
 
 class _PrimaryColumn extends StatelessWidget {
-  const _PrimaryColumn({required this.detail, required this.includeKeyFacts});
+  const _PrimaryColumn({
+    required this.detail,
+    required this.eligibilityRules,
+    required this.eligibilityKey,
+    required this.includeKeyFacts,
+  });
 
   final SchemeDetail detail;
+  final List<EligibilityRule>? eligibilityRules;
+  final GlobalKey eligibilityKey;
 
   /// True on mobile/tablet, where there's no sidebar to hold the key-facts
   /// card -- it renders inline near the top instead.
@@ -112,9 +158,21 @@ class _PrimaryColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final jurisdictionLabel = switch (detail.jurisdiction) {
+      Jurisdiction.central => 'Government of India',
+      Jurisdiction.state => detail.stateCode != null ? 'Government of ${detail.stateCode}' : 'State government',
+      Jurisdiction.unrecognized => null,
+    };
+    final rules = eligibilityRules;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (detail.category != null || jurisdictionLabel != null)
+          EyebrowLabel(
+            [detail.category, jurisdictionLabel].whereType<String>().join(' · '),
+          ),
+        const SizedBox(height: AppSpacing.xs),
         Text(detail.name, style: theme.textTheme.headlineSmall),
         if (detail.nameHi != null) ...[
           const SizedBox(height: AppSpacing.xs),
@@ -123,26 +181,38 @@ class _PrimaryColumn extends StatelessWidget {
             style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.outline),
           ),
         ],
+        if (detail.descriptionShort != null) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(detail.descriptionShort!, style: theme.textTheme.bodyMedium),
+        ],
         if (includeKeyFacts) ...[
           const SizedBox(height: AppSpacing.lg),
           _KeyFactsCard(detail: detail),
         ],
+        if (rules != null && rules.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          _WhyThisLooksPromisingCard(rules: rules),
+        ],
         const SizedBox(height: AppSpacing.lg),
         _OverviewCard(detail: detail),
-        if (detail.descriptionLong != null || detail.descriptionShort != null) ...[
+        if (detail.descriptionLong != null) ...[
           const SizedBox(height: AppSpacing.lg),
           const SectionHeader('About'),
-          _ExpandableText(detail.descriptionLong ?? detail.descriptionShort!),
+          _ExpandableText(detail.descriptionLong!),
         ],
         if (detail.benefits.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
-          const SectionHeader('Benefits'),
-          _BenefitsList(benefits: detail.benefits),
+          const SectionHeader('What you may receive'),
+          _BenefitsCard(benefits: detail.benefits),
+        ],
+        if (rules != null && rules.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          SectionHeader('Eligibility, explained', key: eligibilityKey),
+          _EligibilityExplainedCard(rules: rules),
         ],
         if (detail.documents.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
-          const SectionHeader('Documents required'),
-          ...detail.documents.map((d) => _DocumentLine(document: d)),
+          _KeepTheseReadyBox(documents: detail.documents),
         ],
         if (detail.tags.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
@@ -155,6 +225,62 @@ class _PrimaryColumn extends StatelessWidget {
         ],
         const SizedBox(height: AppSpacing.xl),
       ],
+    );
+  }
+}
+
+/// Real, templated from the actual PASS rules carried in from For You/
+/// Home -- never hand-written placeholder copy. Absent entirely when no
+/// eligibility context was passed in (Explore, Assistant evidence).
+class _WhyThisLooksPromisingCard extends StatelessWidget {
+  const _WhyThisLooksPromisingCard({required this.rules});
+
+  final List<EligibilityRule> rules;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final passLabels = rules
+        .where((r) => r.state == EligibilityState.pass)
+        .map((r) => r.label)
+        .take(2)
+        .toList();
+    final unknownCount = rules.where((r) => r.state == EligibilityState.unknown).length;
+    if (passLabels.isEmpty) return const SizedBox.shrink();
+
+    final body = StringBuffer('Your ${passLabels.join(' and ')} match');
+    body.write(passLabels.length == 1 ? 'es' : '');
+    body.write(' the first eligibility signals we could verify.');
+    if (unknownCount > 0) {
+      body.write(' $unknownCount detail${unknownCount == 1 ? '' : 's'} still need checking.');
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE7F5EC),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle_outline, color: Color(0xFF2E7D32)),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Why this looks promising',
+                  style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(body.toString(), style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -327,68 +453,55 @@ class _ExpandableTextState extends State<_ExpandableText> {
   }
 }
 
-/// Benefits grouped by their `stage` field -- previously fetched from the
-/// API but never rendered; every benefit rendered as one flat, ungrouped
-/// list regardless of stage.
-class _BenefitsList extends StatelessWidget {
-  const _BenefitsList({required this.benefits});
+/// A strong, singular benefit-value card -- previously a flat bulleted
+/// list under a plain "Benefits" heading. Groups by `stage` (fetched from
+/// the API, previously never rendered) when more than one exists.
+class _BenefitsCard extends StatelessWidget {
+  const _BenefitsCard({required this.benefits});
 
   final List<Benefit> benefits;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final grouped = <String, List<Benefit>>{};
     for (final b in benefits) {
-      grouped.putIfAbsent(b.stage ?? 'General', () => []).add(b);
+      grouped.putIfAbsent(b.stage ?? 'Benefit', () => []).add(b);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final entry in grouped.entries) ...[
-          if (grouped.length > 1) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
-              child: Text(
-                entry.key,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.outline),
-              ),
-            ),
-          ],
-          for (final b in entry.value) _BulletLine(text: b.amountText, truncated: b.isTruncated),
-        ],
-      ],
-    );
-  }
-}
-
-class _BulletLine extends StatelessWidget {
-  const _BulletLine({required this.text, required this.truncated});
-
-  final String text;
-  final bool truncated;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Row(
+    return AppCard(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('•  '),
-          Expanded(child: Text(text)),
-          // Distinct from a "needs review" flag (_DocumentLine below) --
-          // previously both used the identical warning-amber icon,
-          // disambiguated only by hover/long-press tooltip text.
-          if (truncated) ...[
-            const SizedBox(width: AppSpacing.xs),
-            Tooltip(
-              message: 'This amount was cut off in the source data.',
-              child: Icon(Icons.unfold_more, size: AppSpacing.iconSm, color: scheme.tertiary),
-            ),
+          for (final entry in grouped.entries) ...[
+            if (entry.key != 'Benefit')
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                child: Text(
+                  entry.key,
+                  style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.outline),
+                ),
+              ),
+            for (final b in entry.value) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(b.amountText, style: theme.textTheme.titleMedium),
+                  ),
+                  if (b.isTruncated)
+                    Tooltip(
+                      message: 'This amount was cut off in the source data.',
+                      child: Icon(
+                        Icons.unfold_more,
+                        size: AppSpacing.iconSm,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                    ),
+                ],
+              ),
+              if (b != grouped.values.last.last) const SizedBox(height: AppSpacing.sm),
+            ],
           ],
         ],
       ),
@@ -396,43 +509,126 @@ class _BulletLine extends StatelessWidget {
   }
 }
 
-class _DocumentLine extends StatelessWidget {
-  const _DocumentLine({required this.document});
+/// Each rule real, from the eligibility context passed in -- label,
+/// state-templated sub-caption, and a real "Check" action for UNKNOWN
+/// rules (re-enters the For You wizard so the user can actually answer
+/// it -- not deep-linked to the exact question; see the redesign plan's
+/// scope note on this).
+class _EligibilityExplainedCard extends ConsumerWidget {
+  const _EligibilityExplainedCard({required this.rules});
 
-  final SchemeDocument document;
+  final List<EligibilityRule> rules;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < rules.length; i++) ...[
+            if (i > 0) const Divider(height: AppSpacing.lg),
+            _EligibilityRuleRow(rule: rules[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EligibilityRuleRow extends ConsumerWidget {
+  const _EligibilityRuleRow({required this.rule});
+
+  final EligibilityRule rule;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final (icon, color, caption) = switch (rule.state) {
+      EligibilityState.pass => (Icons.check_circle, const Color(0xFF2E7D32), 'Matched from your profile'),
+      EligibilityState.fail => (Icons.cancel, Theme.of(context).colorScheme.error, "Doesn't match your profile"),
+      EligibilityState.unknown => (Icons.help_outline, const Color(0xFF996600), "We don't have this yet"),
+      EligibilityState.notApplicable => (
+        Icons.remove_circle_outline,
+        theme.colorScheme.outline,
+        'Not applicable',
+      ),
+      EligibilityState.unrecognized => (Icons.help_outline, theme.colorScheme.outline, 'Unknown'),
+    };
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: AppSpacing.iconMd),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(rule.label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                '$caption · ${rule.state.name.toUpperCase()}',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+              ),
+            ],
+          ),
+        ),
+        if (rule.state == EligibilityState.unknown)
+          TextButton(
+            onPressed: () {
+              ref.read(recommendationsNotifierProvider.notifier).reset();
+              context.go(AppRoutes.recommendations);
+            },
+            child: const Text('Check'),
+          ),
+      ],
+    );
+  }
+}
+
+/// Restyled from a bulleted "Documents required" list into the compact,
+/// tinted "Keep these ready" summary box the reference mockups use --
+/// real document names, still `SchemeDetail.documents`, not invented.
+class _KeepTheseReadyBox extends StatelessWidget {
+  const _KeepTheseReadyBox({required this.documents});
+
+  final List<SchemeDocument> documents;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+    final colors = context.colors;
+    final names = documents.map((d) => d.name).join(', ');
+    final needsReviewCount = documents.where((d) => d.needsReview).length;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('•  '),
-          Expanded(child: Text(document.name)),
-          if (document.isMandatory) ...[
-            const SizedBox(width: AppSpacing.xs),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              ),
-              child: Text('Required', style: theme.textTheme.labelSmall),
+          Icon(Icons.description_outlined, size: AppSpacing.iconMd, color: colors.textSecondary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Keep these ready', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(names, style: theme.textTheme.bodySmall),
+                if (needsReviewCount > 0) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '$needsReviewCount document${needsReviewCount == 1 ? '' : 's'} could not be confidently '
+                    'parsed -- worth double-checking.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
+                  ),
+                ],
+              ],
             ),
-          ],
-          if (document.needsReview) ...[
-            const SizedBox(width: AppSpacing.xs),
-            Tooltip(
-              message: 'This document could not be confidently parsed -- worth double-checking.',
-              child: Icon(
-                Icons.flag_outlined,
-                size: AppSpacing.iconSm,
-                color: theme.colorScheme.tertiary,
-              ),
-            ),
-          ],
+          ),
         ],
       ),
     );
