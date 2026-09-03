@@ -13,6 +13,8 @@ from fastapi import APIRouter
 from schememedia.api.v1.routers import (
     assistant,
     auth,
+    comments,
+    likes,
     profile,
     recommendations,
     saved_schemes,
@@ -29,3 +31,5 @@ api_router.include_router(assistant.router)
 api_router.include_router(auth.router)
 api_router.include_router(profile.router)
 api_router.include_router(saved_schemes.router)
+api_router.include_router(likes.router)
+api_router.include_router(comments.router)

@@ -22,7 +22,9 @@ from schememedia.core.security import InvalidTokenError, decode_access_token
 from schememedia.db import sync_session
 from schememedia.db.models.user import User
 from schememedia.db.session import get_session
+from schememedia.repositories.comments import SqlCommentRepository
 from schememedia.repositories.eligibility import SqlEligibilityRuleRepository
+from schememedia.repositories.likes import SqlLikeRepository
 from schememedia.repositories.refresh_tokens import SqlRefreshTokenRepository
 from schememedia.repositories.saved_schemes import SqlSavedSchemeRepository
 from schememedia.repositories.schemes import SqlSchemeRepository
@@ -147,6 +149,32 @@ def get_current_user_id(request: Request, settings: SettingsDep) -> uuid.UUID:
 CurrentUserIdDep = Annotated[uuid.UUID, Depends(get_current_user_id)]
 
 
+def get_optional_current_user_id(
+    request: Request, settings: SettingsDep
+) -> uuid.UUID | None:
+    """Like get_current_user_id, but for routes that stay public and only
+    *personalize* for a signed-in caller (e.g. scheme detail's
+    viewer_has_liked). No header, a malformed header, or an expired/invalid
+    token all resolve to "anonymous" rather than a 401 -- the route itself
+    must keep working for a signed-out visitor, so a stale token should
+    degrade to the signed-out view, not break the page.
+    """
+    header = request.headers.get("Authorization")
+    if not header or not header.startswith(_BEARER_PREFIX):
+        return None
+    token = header[len(_BEARER_PREFIX) :]
+    try:
+        payload = decode_access_token(token, settings)
+    except InvalidTokenError:
+        return None
+    return payload.user_id
+
+
+OptionalCurrentUserIdDep = Annotated[
+    uuid.UUID | None, Depends(get_optional_current_user_id)
+]
+
+
 async def get_current_user(user_id: CurrentUserIdDep, session: SessionDep) -> User:
     """The full account row, for routes that need more than just the id
     (e.g. /auth/me). A token can outlive the account it names (deleted
@@ -179,6 +207,14 @@ def get_saved_scheme_repository(session: SessionDep) -> SqlSavedSchemeRepository
     return SqlSavedSchemeRepository(session)
 
 
+def get_like_repository(session: SessionDep) -> SqlLikeRepository:
+    return SqlLikeRepository(session)
+
+
+def get_comment_repository(session: SessionDep) -> SqlCommentRepository:
+    return SqlCommentRepository(session)
+
+
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 UserProfileRepositoryDep = Annotated[
     SqlUserProfileRepository, Depends(get_user_profile_repository)
@@ -186,3 +222,5 @@ UserProfileRepositoryDep = Annotated[
 SavedSchemeRepositoryDep = Annotated[
     SqlSavedSchemeRepository, Depends(get_saved_scheme_repository)
 ]
+LikeRepositoryDep = Annotated[SqlLikeRepository, Depends(get_like_repository)]
+CommentRepositoryDep = Annotated[SqlCommentRepository, Depends(get_comment_repository)]

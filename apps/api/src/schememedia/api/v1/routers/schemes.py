@@ -21,7 +21,11 @@ from schememedia.api.v1.schemas.common import (
     SchemeTypeOut,
     VerificationStatusOut,
 )
-from schememedia.core.deps import SchemeDetailServiceDep
+from schememedia.core.deps import (
+    LikeRepositoryDep,
+    OptionalCurrentUserIdDep,
+    SchemeDetailServiceDep,
+)
 from schememedia.core.errors import ErrorEnvelopeOut, NotFoundError
 from schememedia.core.rate_limit import SCHEME_DETAIL_LIMIT, limiter
 
@@ -76,6 +80,11 @@ class SchemeDetailOut(BaseModel):
     average_rating: float | None = Field(
         default=None, description="1-5, null if unrated."
     )
+    viewer_has_liked: bool | None = Field(
+        default=None,
+        description="Whether the signed-in caller has liked this scheme. "
+        "null for a signed-out caller -- not the same as false.",
+    )
 
 
 @router.get(
@@ -95,6 +104,8 @@ class SchemeDetailOut(BaseModel):
 async def get_scheme_detail(
     request: Request,  # required by @limiter.limit -- see its own docstring on why
     service: SchemeDetailServiceDep,
+    likes: LikeRepositoryDep,
+    viewer_id: OptionalCurrentUserIdDep,
     identifier: Annotated[
         str,
         Path(description="A scheme's scheme_id (e.g. SCH_1F47743B) or its URL slug."),
@@ -105,6 +116,9 @@ async def get_scheme_detail(
         raise NotFoundError(f"No scheme found for {identifier!r}.")
 
     s = detail.scheme
+    viewer_has_liked = (
+        await likes.is_liked(viewer_id, s.scheme_id) if viewer_id is not None else None
+    )
     return SchemeDetailOut(
         scheme_id=s.scheme_id,
         slug=s.slug,
@@ -131,4 +145,5 @@ async def get_scheme_detail(
         save_count=s.save_count,
         comment_count=s.comment_count,
         average_rating=s.average_rating,
+        viewer_has_liked=viewer_has_liked,
     )

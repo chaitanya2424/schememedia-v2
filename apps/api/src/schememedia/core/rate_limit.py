@@ -44,6 +44,7 @@ limiter = Limiter(key_func=get_remote_address)
 #   POST /api/v1/auth/register        5/minute   -- bounds account-creation abuse
 #   POST /api/v1/auth/login           10/minute  -- bounds password-guessing
 #   POST /api/v1/auth/refresh         20/minute  -- routine, but still bounded
+#   POST /api/v1/schemes/{id}/comments 10/minute -- bounds public-comment spam
 ASSISTANT_LIMIT = "5/minute"
 RECOMMENDATIONS_LIMIT = "20/minute"
 SEARCH_LIMIT = "30/minute"
@@ -51,3 +52,4 @@ SCHEME_DETAIL_LIMIT = "30/minute"
 AUTH_REGISTER_LIMIT = "5/minute"
 AUTH_LOGIN_LIMIT = "10/minute"
 AUTH_REFRESH_LIMIT = "20/minute"
+COMMENT_CREATE_LIMIT = "10/minute"

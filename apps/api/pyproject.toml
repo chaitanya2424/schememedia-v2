@@ -80,7 +80,7 @@ src = ["src", "tests"]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
-# These four share fixtures (client, fastapi_app) imported from
+# These six share fixtures (client, fastapi_app) imported from
 # tests/_account_fixtures.py rather than each redefining them locally --
 # every test function's own `client` parameter then reads, to a plain
 # import-unaware linter, as "redefining" that import. It is the correct
@@ -92,6 +92,8 @@ select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF"]
 "tests/test_profile_routes.py" = ["F811"]
 "tests/test_saved_schemes_routes.py" = ["F811"]
 "tests/test_recommendations_me_routes.py" = ["F811"]
+"tests/test_likes_routes.py" = ["F811"]
+"tests/test_comments_routes.py" = ["F811"]
 
 [tool.mypy]
 python_version = "3.12"
