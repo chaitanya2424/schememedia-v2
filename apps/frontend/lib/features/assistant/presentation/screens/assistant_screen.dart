@@ -171,34 +171,54 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const EyebrowLabel('A grounded guide'),
+          const EyebrowLabel('AI WELFARE ASSISTANT'),
           const SizedBox(height: AppSpacing.xs),
-          Text('Ask, then understand.', style: theme.textTheme.headlineSmall),
+          Text(
+            'Ask, then understand.',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             "I'll point to the rule, explain the uncertainty and never guess on your behalf.",
-            style: theme.textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.lg),
           AppCard(
             child: Column(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
-                    color: colors.brandTint,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Icon(Icons.auto_awesome, color: colors.brand),
+                  child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 28),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text('What would you like to know?', style: theme.textTheme.titleMedium),
+                Text(
+                  'What would you like to know?',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Try a question about a scheme, a benefit or the documents you may need.',
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 for (final example in _examples) ...[
@@ -212,13 +232,21 @@ class _EmptyState extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF3F8),
+              color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.shield_outlined, color: Color(0xFF1565C0)),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFDBEAFE),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.shield_rounded, color: Color(0xFF1D4ED8), size: 18),
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
@@ -226,11 +254,18 @@ class _EmptyState extends StatelessWidget {
                     children: [
                       Text(
                         'Answers are grounded in sources',
-                        style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E3A8A),
+                        ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         'We show you where the information comes from so you can check it yourself.',
-                        style: theme.textTheme.bodySmall,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF1E40AF),
+                          height: 1.4,
+                        ),
                       ),
                     ],
                   ),
@@ -253,6 +288,7 @@ class _SuggestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
@@ -260,12 +296,21 @@ class _SuggestionCard extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           backgroundColor: colors.surface,
           side: BorderSide(color: colors.divider),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
         ),
         child: Row(
           children: [
-            Expanded(child: Text(text, textAlign: TextAlign.left)),
-            Icon(Icons.arrow_outward, size: AppSpacing.iconSm, color: colors.brand),
+            const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Color(0xFF2563EB)),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                text,
+                textAlign: TextAlign.left,
+                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+              ),
+            ),
+            Icon(Icons.arrow_forward_rounded, size: AppSpacing.iconSm, color: colors.brand),
           ],
         ),
       ),
@@ -278,15 +323,15 @@ class _TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color: const Color(0xFFEFF6FF),
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          border: Border.all(color: const Color(0xFFDBEAFE)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -294,7 +339,7 @@ class _TypingIndicator extends StatelessWidget {
             const SizedBox(
               height: 14,
               width: 14,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1E3A8A)),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text('Thinking…', style: Theme.of(context).textTheme.bodySmall),
@@ -314,25 +359,39 @@ class _InputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final colors = context.colors;
+    return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.divider.withValues(alpha: 0.6))),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
-            child: TextField(
-              key: const ValueKey('assistant_message_field'),
-              controller: controller,
-              enabled: enabled,
-              minLines: 1,
-              maxLines: 5,
-              maxLength: _maxMessageLength,
-              textInputAction: TextInputAction.send,
-              decoration: const InputDecoration(
-                hintText: 'Ask about a scheme or your eligibility…',
-                counterText: '',
+            child: Container(
+              decoration: BoxDecoration(
+                color: colors.surfaceMuted,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                border: Border.all(color: colors.divider),
               ),
-              onSubmitted: (_) => onSend(),
+              child: TextField(
+                key: const ValueKey('assistant_message_field'),
+                controller: controller,
+                enabled: enabled,
+                minLines: 1,
+                maxLines: 5,
+                maxLength: _maxMessageLength,
+                textInputAction: TextInputAction.send,
+                decoration: const InputDecoration(
+                  hintText: 'Ask about a scheme, benefit, or eligibility…',
+                  counterText: '',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+                ),
+                onSubmitted: (_) => onSend(),
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -340,12 +399,16 @@ class _InputBar extends StatelessWidget {
             key: const ValueKey('assistant_send_button'),
             tooltip: enabled ? 'Send message' : 'Sending…',
             onPressed: enabled ? onSend : null,
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+            ),
             icon: enabled
-                ? const Icon(Icons.send)
+                ? const Icon(Icons.send_rounded)
                 : const SizedBox(
                     height: 16,
                     width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   ),
           ),
         ],
