@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../providers/assistant_providers.dart';
 import '../widgets/chat_entry_view.dart';
@@ -17,6 +19,12 @@ const _examples = [
   'I\'m a farmer with 2 acres, what schemes can help me?',
   'Are there any scholarships for SC/ST students?',
   'I\'m pregnant and unemployed -- what support is available?',
+];
+
+const _hindiExamples = [
+  'मैं 2 एकड़ जमीन वाला किसान हूँ, मुझे किन योजनाओं से मदद मिल सकती है?',
+  'क्या अनुसूचित जाति/जनजाति (SC/ST) छात्रों के लिए छात्रवृत्तियां हैं?',
+  'मातृ वंदना और गर्भवती महिलाओं के लिए वित्तीय सहायता क्या है?',
 ];
 
 /// The backend's own validated limit (AssistantRequest.message, api/v1/
@@ -74,11 +82,20 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(assistantNotifierProvider);
+    final strings = ref.watch(stringsProvider);
     _scrollToBottomIfGrew(state.history.length);
     final isEmpty = state.history.isEmpty && !state.isSending;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Assistant')),
+      appBar: AppBar(
+        title: Text(strings.isHindi ? 'कल्याण सहायक' : 'Assistant'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: LanguageToggleButton(),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ResponsiveContainer(
           child: Column(
@@ -110,20 +127,23 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   }
 }
 
-class _MoreIdeas extends StatefulWidget {
+class _MoreIdeas extends ConsumerStatefulWidget {
   const _MoreIdeas({required this.onExampleTap});
 
   final ValueChanged<String> onExampleTap;
 
   @override
-  State<_MoreIdeas> createState() => _MoreIdeasState();
+  ConsumerState<_MoreIdeas> createState() => _MoreIdeasState();
 }
 
-class _MoreIdeasState extends State<_MoreIdeas> {
+class _MoreIdeasState extends ConsumerState<_MoreIdeas> {
   bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(stringsProvider);
+    final examples = strings.isHindi ? _hindiExamples : _examples;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Column(
@@ -134,7 +154,11 @@ class _MoreIdeasState extends State<_MoreIdeas> {
             child: TextButton.icon(
               onPressed: () => setState(() => _expanded = !_expanded),
               icon: Icon(_expanded ? Icons.expand_less : Icons.lightbulb_outline),
-              label: Text(_expanded ? 'Hide question ideas' : 'More question ideas'),
+              label: Text(
+                _expanded
+                    ? (strings.isHindi ? 'सुझाव छिपाएं' : 'Hide question ideas')
+                    : (strings.isHindi ? 'अन्य प्रश्न सुझाव' : 'More question ideas'),
+              ),
             ),
           ),
           if (_expanded) ...[
@@ -142,7 +166,7 @@ class _MoreIdeasState extends State<_MoreIdeas> {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
-                for (final example in _examples)
+                for (final example in examples)
                   ActionChip(label: Text(example), onPressed: () => widget.onExampleTap(example)),
               ],
             ),
@@ -157,15 +181,18 @@ class _MoreIdeasState extends State<_MoreIdeas> {
 /// Exact copy from the reference: eyebrow "A GROUNDED GUIDE", headline
 /// "Ask, then understand.", suggestion prompts as stacked full-width
 /// cards (not chips), a "grounded in sources" trust banner.
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   const _EmptyState({required this.onExampleTap});
 
   final ValueChanged<String> onExampleTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
+    final examples = strings.isHindi ? _hindiExamples : _examples;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -174,7 +201,7 @@ class _EmptyState extends StatelessWidget {
           const EyebrowLabel('AI WELFARE ASSISTANT'),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Ask, then understand.',
+            strings.isHindi ? 'पूछें, और स्पष्ट समझें।' : 'Ask, then understand.',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
@@ -182,7 +209,9 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            "I'll point to the rule, explain the uncertainty and never guess on your behalf.",
+            strings.isHindi
+                ? 'मैं आधिकारिक नियमों का संदर्भ दूंगा, पात्रता स्पष्ट करूंगा और कभी अनुमान नहीं लगाऊंगा।'
+                : "I'll point to the rule, explain the uncertainty and never guess on your behalf.",
             style: theme.textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -211,19 +240,21 @@ class _EmptyState extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'What would you like to know?',
+                  strings.isHindi ? 'आप क्या जानना चाहते हैं?' : 'What would you like to know?',
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Try a question about a scheme, a benefit or the documents you may need.',
+                  strings.isHindi
+                      ? 'किसी योजना, लाभ या पात्रता दस्तावेजों के बारे में प्रश्न पूछें।'
+                      : 'Try a question about a scheme, a benefit or the documents you may need.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                for (final example in _examples) ...[
+                for (final example in examples) ...[
                   _SuggestionCard(text: example, onTap: () => onExampleTap(example)),
-                  if (example != _examples.last) const SizedBox(height: AppSpacing.sm),
+                  if (example != examples.last) const SizedBox(height: AppSpacing.sm),
                 ],
               ],
             ),

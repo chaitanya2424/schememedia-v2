@@ -1,37 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../localization/app_strings.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_shadows.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/language_toggle_button.dart';
 import '../widgets/responsive.dart';
 import 'routes.dart';
 
 /// One persistent nav frame for all six top-level screens -- bottom
 /// [NavigationBar] on mobile, [NavigationRail] on tablet/web-wide with
-/// National Welfare Portal branding emblem and high-contrast selected indicators.
-class AppShell extends StatelessWidget {
+/// National Welfare Portal branding emblem, high-contrast selected indicators,
+/// and reactive Bilingual (English / Hindi) support.
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
-
-  static const _destinations = [
-    (icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
-    (icon: Icons.search_outlined, selectedIcon: Icons.search_rounded, label: 'Explore'),
-    (icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome_rounded, label: 'For You'),
-    (icon: Icons.bookmark_outline, selectedIcon: Icons.bookmark_rounded, label: 'Saved'),
-    (icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble_rounded, label: 'Assistant'),
-    (icon: Icons.person_outline, selectedIcon: Icons.person_rounded, label: 'Profile'),
-  ];
 
   void _onSelect(int index) {
     navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final wide = Breakpoints.of(context) != ScreenSize.mobile;
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
+
+    final destinations = [
+      (icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: strings.navHome),
+      (icon: Icons.search_outlined, selectedIcon: Icons.search_rounded, label: strings.navExplore),
+      (icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome_rounded, label: strings.navForYou),
+      (icon: Icons.bookmark_outline, selectedIcon: Icons.bookmark_rounded, label: strings.navSaved),
+      (icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble_rounded, label: strings.navAssistant),
+      (icon: Icons.person_outline, selectedIcon: Icons.person_rounded, label: strings.navProfile),
+    ];
 
     if (wide) {
       return Scaffold(
@@ -83,11 +88,13 @@ class AppShell extends StatelessWidget {
                           letterSpacing: -0.2,
                         ),
                       ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const LanguageToggleButton(),
                     ],
                   ),
                 ),
                 destinations: [
-                  for (final d in _destinations)
+                  for (final d in destinations)
                     NavigationRailDestination(
                       icon: Icon(d.icon),
                       selectedIcon: Icon(d.selectedIcon, color: colors.brand),
@@ -124,7 +131,7 @@ class AppShell extends StatelessWidget {
           onDestinationSelected: _onSelect,
           indicatorColor: colors.brandTint,
           destinations: [
-            for (final d in _destinations)
+            for (final d in destinations)
               NavigationDestination(
                 icon: Icon(d.icon),
                 selectedIcon: Icon(d.selectedIcon, color: colors.brand),

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../recommendations/domain/recommendation.dart';
 import '../../../recommendations/presentation/providers/profile_form_provider.dart';
@@ -92,6 +94,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
     final wide = Breakpoints.of(context) == ScreenSize.wide;
     final recommendations = ref.watch(recommendationsNotifierProvider).valueOrNull;
     final answered = ref.watch(
@@ -117,7 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Icon(Icons.verified, size: 14, color: colors.brand),
                   const SizedBox(width: 4),
                   Text(
-                    'NATIONAL WELFARE PORTAL',
+                    strings.nationalWelfarePortal.toUpperCase(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colors.brand,
                       fontWeight: FontWeight.w800,
@@ -128,21 +131,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             const Spacer(),
-            Text(
-              _todayLabel().toUpperCase(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textTertiary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
+            const LanguageToggleButton(),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
 
         // --- 2. Title & Value Proposition ---
         Text(
-          'Find Welfare Schemes Made for You',
+          strings.heroTitle,
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w800,
             color: colors.textPrimary,
@@ -151,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          'Discover 1,000+ verified Central and State benefits, transparent eligibility rules, and official department portals in one place.',
+          strings.heroSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colors.textSecondary,
             height: 1.4,
@@ -172,7 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             textInputAction: TextInputAction.search,
             style: theme.textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
             decoration: InputDecoration(
-              hintText: 'Search schemes, e.g. "farmer subsidy" or "scholarship"',
+              hintText: strings.searchPlaceholder,
               hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
               prefixIcon: Icon(Icons.search, color: colors.brand),
               suffixIcon: Padding(
@@ -187,7 +183,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
                   onPressed: () => _submit(),
-                  child: const Text('Search'),
+                  child: Text(strings.isHindi ? 'खोजें' : 'Search'),
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -207,7 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Row(
             children: [
               Text(
-                'Popular: ',
+                strings.isHindi ? 'लोकप्रिय: ' : 'Popular: ',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: colors.textTertiary,
                   fontWeight: FontWeight.w600,
@@ -246,7 +242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Expanded(
               child: Text(
-                'Explore by Category',
+                strings.exploreByCategory,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
@@ -255,7 +251,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             TextButton(
               onPressed: () => context.go(AppRoutes.search),
-              child: const Text('All schemes'),
+              child: Text(strings.isHindi ? 'सभी योजनाएं' : 'All schemes'),
             ),
           ],
         ),
@@ -294,7 +290,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        cat.name,
+                        strings.categoryName(cat.name),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,

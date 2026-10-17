@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/local/language_repository.dart';
 import '../../../../core/local/saved_schemes_repository.dart';
 import '../../../../core/local/theme_mode_repository.dart';
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -86,11 +88,7 @@ class ProfileScreen extends ConsumerWidget {
                       subtitle: 'No delivery channel (email/push) exists yet',
                     ),
                     const Divider(height: 1),
-                    _InertRow(
-                      icon: Icons.language_outlined,
-                      title: 'Language',
-                      subtitle: 'English (only language available today)',
-                    ),
+                    const _LanguageRow(),
                   ],
                 ),
               ),
@@ -383,6 +381,55 @@ class _InertRow extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LanguageRow extends ConsumerWidget {
+  const _LanguageRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final language = ref.watch(languageProvider);
+    final strings = ref.watch(stringsProvider);
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          Icon(Icons.translate_rounded, color: colors.brand),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(strings.languageLabel, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  language == AppLanguage.hindi ? 'हिंदी (Hindi) सक्रिय है' : 'English (Active)',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          SegmentedButton<AppLanguage>(
+            segments: const [
+              ButtonSegment(
+                value: AppLanguage.english,
+                label: Text('EN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+              ButtonSegment(
+                value: AppLanguage.hindi,
+                label: Text('हिं', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+            ],
+            selected: {language},
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) =>
+                ref.read(languageProvider.notifier).setLanguage(selection.first),
           ),
         ],
       ),
