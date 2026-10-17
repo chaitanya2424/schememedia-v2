@@ -152,6 +152,9 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
         duration: const Duration(seconds: 3),
       ),
     );
+
+    // Immediately advance to Step 1 (Demographics) so user sees the populated fields
+    _goTo(1);
   }
 
   @override

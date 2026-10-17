@@ -14,6 +14,7 @@ from schememedia.api.v1.routers import (
     assistant,
     auth,
     comments,
+    health,
     likes,
     profile,
     profile_automation,
@@ -25,6 +26,7 @@ from schememedia.api.v1.routers import (
 
 api_router = APIRouter()
 
+api_router.include_router(health.router)
 api_router.include_router(search.router)
 api_router.include_router(recommendations.router)
 api_router.include_router(schemes.router)
