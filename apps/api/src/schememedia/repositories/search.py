@@ -122,27 +122,44 @@ class SqlKeywordRetriever:
 MAX_COSINE_DISTANCE = 0.56
 
 
+_SHARED_EMBEDDING_MODEL: Any = None
+_QUERY_EMBED_CACHE: dict[str, list[float]] = {}
+_MAX_EMBED_CACHE_ENTRIES = 1000
+
+
+def get_shared_embedding_model() -> Any:
+    global _SHARED_EMBEDDING_MODEL
+    if _SHARED_EMBEDDING_MODEL is None:
+        from fastembed import TextEmbedding
+
+        _SHARED_EMBEDDING_MODEL = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
+    return _SHARED_EMBEDDING_MODEL
+
+
 @dataclass
 class PgVectorRetriever:
     """Semantic retrieval over the HNSW-indexed embedding column.
 
     Optional: a SearchService constructed without one falls back to
     keyword-only search unchanged (see services/search.py). The embedding
-    model is loaded lazily, on first use -- fastembed pulls in
-    onnxruntime/numpy, weight that a keyword-only caller should never pay.
+    model is shared across requests and initialized lazily on first use,
+    saving 1-3 seconds of ONNX model reloading on every single query.
     """
 
     session: Session
     _model: Any = field(default=None, init=False, repr=False)
 
     def _embed_query(self, text_: str) -> list[float]:
-        if self._model is None:
-            # Imported lazily for the same reason as the field above.
-            from fastembed import TextEmbedding
+        cleaned = text_.strip().lower()
+        if cleaned in _QUERY_EMBED_CACHE:
+            return _QUERY_EMBED_CACHE[cleaned]
 
-            self._model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
-        vector = next(self._model.embed([text_]))
-        return vector.tolist()  # type: ignore[no-any-return]
+        model = self._model or get_shared_embedding_model()
+        vector = next(model.embed([text_])).tolist()  # type: ignore[no-any-return]
+
+        if len(_QUERY_EMBED_CACHE) < _MAX_EMBED_CACHE_ENTRIES:
+            _QUERY_EMBED_CACHE[cleaned] = vector
+        return vector
 
     def search(self, query: str, *, limit: int = 20) -> list[Candidate]:
         if not query.strip():

@@ -91,6 +91,13 @@ def reciprocal_rank_fusion(
     return sorted(totals.items(), key=lambda pair: (-pair[1], pair[0]))
 
 
+import time
+
+_SEARCH_CACHE: dict[tuple[str, int], tuple[float, SearchResponse]] = {}
+_SEARCH_CACHE_TTL_SECONDS = 300  # 5 minutes
+_MAX_SEARCH_CACHE_SIZE = 500
+
+
 @dataclass
 class SearchService:
     keyword: SqlKeywordRetriever
@@ -108,13 +115,21 @@ class SearchService:
         # regardless of how little signal the query carried. Without this
         # gate, hybrid search would surface results for input a keyword-only
         # search correctly rejected as too weak to search on at all.
-        if not query.strip() or not self.keyword.has_searchable_terms(query):
+        cleaned_query = query.strip()
+        if not cleaned_query or not self.keyword.has_searchable_terms(cleaned_query):
             return SearchResponse(query=query)
 
+        cache_key = (cleaned_query.lower(), limit)
+        now = time.monotonic()
+        if cache_key in _SEARCH_CACHE:
+            cached_at, cached_response = _SEARCH_CACHE[cache_key]
+            if now - cached_at < _SEARCH_CACHE_TTL_SECONDS:
+                return cached_response
+
         # Over-fetch so fusion has room to reorder before truncation.
-        keyword_hits = self.keyword.search(query, limit=limit * 3)
+        keyword_hits = self.keyword.search(cleaned_query, limit=limit * 3)
         semantic_hits = (
-            self.semantic.search(query, limit=limit * 3) if self.semantic else []
+            self.semantic.search(cleaned_query, limit=limit * 3) if self.semantic else []
         )
 
         # Only lists that found something contribute to fusion. A query with
@@ -123,7 +138,9 @@ class SearchService:
         # retrievers instead of running one and falling back to the other.
         ranked_lists = [hits for hits in (keyword_hits, semantic_hits) if hits]
         if not ranked_lists:
-            return SearchResponse(query=query)
+            resp = SearchResponse(query=query)
+            _SEARCH_CACHE[cache_key] = (now, resp)
+            return resp
 
         fused = reciprocal_rank_fusion(ranked_lists)[:limit]
         scheme_ids = [scheme_id for scheme_id, _ in fused]
@@ -155,9 +172,16 @@ class SearchService:
                 )
             )
 
-        return SearchResponse(
+        response = SearchResponse(
             query=query,
             results=results,
             total_returned=len(results),
             verification_breakdown=breakdown,
         )
+
+        if len(_SEARCH_CACHE) >= _MAX_SEARCH_CACHE_SIZE:
+            for k in list(_SEARCH_CACHE.keys())[:50]:
+                _SEARCH_CACHE.pop(k, None)
+        _SEARCH_CACHE[cache_key] = (now, response)
+
+        return response

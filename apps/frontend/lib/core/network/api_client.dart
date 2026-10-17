@@ -35,8 +35,8 @@ class ApiClient {
     final dio = Dio(
       BaseOptions(
         baseUrl: EnvConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
         headers: const {'Content-Type': 'application/json', 'Accept': 'application/json'},
       ),
     );
@@ -57,9 +57,28 @@ class ApiClient {
     return dio;
   }
 
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) async {
-    final response = await _dio.get(path, queryParameters: queryParameters);
-    return response.data;
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    int maxRetries = 2,
+  }) async {
+    int attempts = 0;
+    while (true) {
+      try {
+        final response = await _dio.get(path, queryParameters: queryParameters);
+        return response.data;
+      } on DioException catch (e) {
+        final isNetwork = e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError;
+        if (isNetwork && attempts < maxRetries) {
+          attempts++;
+          await Future<void>.delayed(Duration(milliseconds: 600 * attempts));
+          continue;
+        }
+        rethrow;
+      }
+    }
   }
 
   /// [receiveTimeout] overrides the client-wide default for this one call --

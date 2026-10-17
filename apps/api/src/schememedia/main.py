@@ -53,6 +53,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # db/sync_session.py's module docstring.
     init_sync_engine(settings)
 
+    # Pre-warm embedding model in a background thread so the first search request
+    # is instantaneous and does not block worker threads or time out.
+    import threading
+
+    def _warmup_embedding_model() -> None:
+        try:
+            from schememedia.repositories.search import get_shared_embedding_model
+
+            get_shared_embedding_model()
+            logger.info("embedding_model_prewarmed")
+        except Exception as e:
+            logger.warning("embedding_model_warmup_deferred", error=str(e))
+
+    threading.Thread(target=_warmup_embedding_model, daemon=True).start()
+
     yield
 
     await dispose_engine()
