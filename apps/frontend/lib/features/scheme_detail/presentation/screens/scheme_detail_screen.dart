@@ -265,24 +265,41 @@ class _WhyThisLooksPromisingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFE7F5EC),
+        color: const Color(0xFFECFDF5),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: const Color(0xFFA7F3D0)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_circle_outline, color: Color(0xFF2E7D32)),
-          const SizedBox(width: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: const BoxDecoration(
+              color: Color(0xFFD1FAE5),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Why this looks promising',
-                  style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                  'Why this looks promising for you',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF065F46),
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(body.toString(), style: theme.textTheme.bodySmall),
+                const SizedBox(height: 4),
+                Text(
+                  body.toString(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF047857),
+                    height: 1.4,
+                  ),
+                ),
               ],
             ),
           ),
@@ -612,28 +629,55 @@ class _BenefitsCard extends StatelessWidget {
             if (entry.key != 'Benefit')
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                child: Text(
-                  entry.key,
-                  style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.outline),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    entry.key.toUpperCase(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFF475569),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ),
             for (final b in entry.value) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(b.amountText, style: theme.textTheme.titleMedium),
-                  ),
-                  if (b.isTruncated)
-                    Tooltip(
-                      message: 'This amount was cut off in the source data.',
-                      child: Icon(
-                        Icons.unfold_more,
-                        size: AppSpacing.iconSm,
-                        color: theme.colorScheme.tertiary,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.currency_rupee, size: 20, color: Color(0xFF16A34A)),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        b.amountText,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF15803D),
+                        ),
                       ),
                     ),
-                ],
+                    if (b.isTruncated)
+                      Tooltip(
+                        message: 'This amount was cut off in the source data.',
+                        child: Icon(
+                          Icons.unfold_more,
+                          size: AppSpacing.iconSm,
+                          color: theme.colorScheme.tertiary,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               if (b != grouped.values.last.last) const SizedBox(height: AppSpacing.sm),
             ],
@@ -661,7 +705,7 @@ class _EligibilityExplainedCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < rules.length; i++) ...[
-            if (i > 0) const Divider(height: AppSpacing.lg),
+            if (i > 0) const SizedBox(height: AppSpacing.xs),
             _EligibilityRuleRow(rule: rules[i]),
           ],
         ],
@@ -678,44 +722,87 @@ class _EligibilityRuleRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final (icon, color, caption) = switch (rule.state) {
-      EligibilityState.pass => (Icons.check_circle, const Color(0xFF2E7D32), 'Matched from your profile'),
-      EligibilityState.fail => (Icons.cancel, Theme.of(context).colorScheme.error, "Doesn't match your profile"),
-      EligibilityState.unknown => (Icons.help_outline, const Color(0xFF996600), "We don't have this yet"),
-      EligibilityState.notApplicable => (
-        Icons.remove_circle_outline,
-        theme.colorScheme.outline,
-        'Not applicable',
+    final (icon, color, bgColor, caption) = switch (rule.state) {
+      EligibilityState.pass => (
+        Icons.check_circle_rounded,
+        const Color(0xFF15803D),
+        const Color(0xFFF0FDF4),
+        'Matched from your profile'
       ),
-      EligibilityState.unrecognized => (Icons.help_outline, theme.colorScheme.outline, 'Unknown'),
+      EligibilityState.fail => (
+        Icons.cancel_rounded,
+        Theme.of(context).colorScheme.error,
+        const Color(0xFFFEF2F2),
+        "Doesn't match your profile"
+      ),
+      EligibilityState.unknown => (
+        Icons.help_outline_rounded,
+        const Color(0xFFB45309),
+        const Color(0xFFFFFBEB),
+        "We don't have this yet"
+      ),
+      EligibilityState.notApplicable => (
+        Icons.remove_circle_outline_rounded,
+        theme.colorScheme.outline,
+        const Color(0xFFF8FAFC),
+        'Not applicable'
+      ),
+      EligibilityState.unrecognized => (
+        Icons.help_outline_rounded,
+        theme.colorScheme.outline,
+        const Color(0xFFF8FAFC),
+        'Unknown'
+      ),
     };
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: color, size: AppSpacing.iconMd),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(rule.label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-              Text(
-                '$caption · ${rule.state.name.toUpperCase()}',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: AppSpacing.iconMd),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  rule.label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                Text(
+                  '$caption · ${rule.state.name.toUpperCase()}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (rule.state == EligibilityState.unknown)
+            FilledButton.tonal(
+              onPressed: () {
+                ref.read(recommendationsNotifierProvider.notifier).reset();
+                context.go(AppRoutes.recommendations);
+              },
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                visualDensity: VisualDensity.compact,
               ),
-            ],
-          ),
-        ),
-        if (rule.state == EligibilityState.unknown)
-          TextButton(
-            onPressed: () {
-              ref.read(recommendationsNotifierProvider.notifier).reset();
-              context.go(AppRoutes.recommendations);
-            },
-            child: const Text('Check'),
-          ),
-      ],
+              child: const Text('Check'),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -732,38 +819,73 @@ class _KeepTheseReadyBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
-    final names = documents.map((d) => d.name).join(', ');
     final needsReviewCount = documents.where((d) => d.needsReview).length;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: colors.surfaceMuted,
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.description_outlined, size: AppSpacing.iconMd, color: colors.textSecondary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Keep these ready', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: AppSpacing.xs),
-                Text(names, style: theme.textTheme.bodySmall),
-                if (needsReviewCount > 0) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '$needsReviewCount document${needsReviewCount == 1 ? '' : 's'} could not be confidently '
-                    'parsed -- worth double-checking.',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
-                  ),
-                ],
-              ],
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: const Icon(Icons.folder_shared_outlined, size: 20, color: Color(0xFF334155)),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Keep these ready',
+                style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final doc in documents)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.description_outlined, size: 14, color: Color(0xFF64748B)),
+                      const SizedBox(width: 6),
+                      Text(
+                        doc.name,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          if (needsReviewCount > 0) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '$needsReviewCount document${needsReviewCount == 1 ? '' : 's'} could not be confidently '
+              'parsed -- worth double-checking.',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
+            ),
+          ],
         ],
       ),
     );
@@ -778,10 +900,6 @@ class _OfficialLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Never silently omitted -- an absent official_url is shown explicitly,
-    // matching the backend/assistant's own honesty rule. Given slightly
-    // more visual presence than a bare italic caption, while staying calm
-    // rather than alarming.
     if (url == null) {
       return Row(
         children: [
@@ -796,14 +914,18 @@ class _OfficialLink extends StatelessWidget {
         ],
       );
     }
-    // Promoted to a filled primary button -- likely the single most
-    // important action on the page, previously an OutlinedButton.
     return SizedBox(
       width: double.infinity,
       child: FilledButton.icon(
         onPressed: () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication),
         icon: const Icon(Icons.open_in_new),
         label: const Text('Visit official page'),
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF1E3A8A),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          elevation: 1,
+        ),
       ),
     );
   }

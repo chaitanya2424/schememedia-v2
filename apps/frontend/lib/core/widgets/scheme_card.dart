@@ -90,6 +90,7 @@ class SchemeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     final isSaved = ref.watch(savedSchemesProvider.select((s) => s.containsKey(schemeId)));
 
     final metaParts = [if (category != null) category!, if (metaSuffix != null) metaSuffix!];
@@ -113,15 +114,23 @@ class SchemeCard extends ConsumerWidget {
                       name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
                     ),
-                    if (metaParts.isNotEmpty)
+                    if (metaParts.isNotEmpty) ...[
+                      const SizedBox(height: 3),
                       Text(
                         metaParts.join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -142,13 +151,16 @@ class SchemeCard extends ConsumerWidget {
               ),
             ],
           ),
-          if (description != null) ...[
+          if (description != null && description!.trim().isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
               description!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textSecondary,
+                height: 1.4,
+              ),
             ),
           ],
           if (benefitHighlight != null) ...[
@@ -174,19 +186,36 @@ class SchemeCard extends ConsumerWidget {
                     onPressed: onTap,
                     icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
                     label: Text(ctaLabel),
+                    style: FilledButton.styleFrom(
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: OutlinedButton(onPressed: onSecondaryTap, child: Text(secondaryLabel!)),
+                  child: OutlinedButton(
+                    onPressed: onSecondaryTap,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(secondaryLabel!),
+                  ),
                 ),
               ],
             )
           else
-            FilledButton.icon(
-              onPressed: onTap,
-              icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
-              label: Text(ctaLabel),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onTap,
+                icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
+                label: Text(ctaLabel),
+                style: FilledButton.styleFrom(
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
             ),
           if (trailing != null) ...[const SizedBox(height: AppSpacing.xs), trailing!],
         ],
@@ -203,36 +232,53 @@ class _CategoryIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final (icon, iconColor, bgColor) = _styleForCategory(category, colors);
+
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: colors.brandTint,
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: iconColor.withValues(alpha: 0.15)),
       ),
-      child: Icon(_iconForCategory(category), color: colors.brand, size: AppSpacing.iconMd),
+      child: Icon(icon, color: iconColor, size: AppSpacing.iconMd),
     );
   }
 
-  static IconData _iconForCategory(String? category) {
+  static (IconData, Color, Color) _styleForCategory(String? category, AppColors colors) {
     final c = (category ?? '').toLowerCase();
-    if (c.contains('agri') || c.contains('farm')) return Icons.grass_outlined;
-    if (c.contains('health')) return Icons.favorite_border;
-    if (c.contains('educat') || c.contains('scholar')) return Icons.school_outlined;
-    if (c.contains('hous')) return Icons.home_outlined;
+    if (c.contains('agri') || c.contains('farm')) {
+      return (Icons.grass_rounded, const Color(0xFF059669), const Color(0xFFECFDF5));
+    }
+    if (c.contains('health')) {
+      return (Icons.favorite_rounded, const Color(0xFFE11D48), const Color(0xFFFFF1F2));
+    }
+    if (c.contains('educat') || c.contains('scholar')) {
+      return (Icons.school_rounded, const Color(0xFF2563EB), const Color(0xFFEFF6FF));
+    }
+    if (c.contains('hous')) {
+      return (Icons.home_rounded, const Color(0xFFD97706), const Color(0xFFFFFBEB));
+    }
     if (c.contains('employ') || c.contains('skill') || c.contains('labour') || c.contains('labor')) {
-      return Icons.work_outline;
+      return (Icons.work_rounded, const Color(0xFF0D9488), const Color(0xFFF0FDFA));
     }
-    if (c.contains('women') || c.contains('child')) return Icons.family_restroom_outlined;
+    if (c.contains('women') || c.contains('child')) {
+      return (Icons.family_restroom_rounded, const Color(0xFF7C3AED), const Color(0xFFF5F3FF));
+    }
     if (c.contains('pension') || c.contains('senior') || c.contains('elder')) {
-      return Icons.elderly_outlined;
+      return (Icons.elderly_rounded, const Color(0xFF4F46E5), const Color(0xFFEEF2FF));
     }
-    if (c.contains('social') || c.contains('welfare')) return Icons.groups_outlined;
+    if (c.contains('social') || c.contains('welfare')) {
+      return (Icons.groups_rounded, const Color(0xFF0284C7), const Color(0xFFF0F9FF));
+    }
     if (c.contains('financ') || c.contains('loan') || c.contains('subsidy')) {
-      return Icons.account_balance_outlined;
+      return (Icons.account_balance_rounded, const Color(0xFF16A34A), const Color(0xFFF0FDF4));
     }
-    if (c.contains('insur')) return Icons.shield_outlined;
-    return Icons.description_outlined;
+    if (c.contains('insur')) {
+      return (Icons.shield_rounded, const Color(0xFF475569), const Color(0xFFF1F5F9));
+    }
+    return (Icons.description_rounded, colors.brand, colors.brandTint);
   }
 }
 
@@ -248,9 +294,13 @@ class _SaveButton extends StatelessWidget {
     return IconButton(
       onPressed: onTap,
       tooltip: saved ? 'Remove from saved' : 'Save for later',
-      icon: Icon(
-        saved ? Icons.bookmark : Icons.bookmark_outline,
-        color: saved ? colors.brand : colors.textSecondary,
+      icon: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          saved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+          key: ValueKey(saved),
+          color: saved ? const Color(0xFF2563EB) : colors.textSecondary,
+        ),
       ),
     );
   }
@@ -267,27 +317,42 @@ class _BenefitBox extends StatelessWidget {
     final colors = context.colors;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
       decoration: BoxDecoration(
-        color: colors.surfaceMuted,
+        color: const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: const Color(0xFF86EFAC).withValues(alpha: 0.7)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.mail_outline, size: AppSpacing.iconMd, color: colors.textSecondary),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDCFCE7),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.currency_rupee, size: 16, color: Color(0xFF15803D)),
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  highlight.label,
-                  style: theme.textTheme.labelMedium?.copyWith(color: colors.textSecondary),
+                  highlight.label.toUpperCase(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: const Color(0xFF15803D),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 Text(
                   highlight.value,
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF14532D),
+                  ),
                 ),
               ],
             ),
