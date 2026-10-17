@@ -5,6 +5,7 @@ import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../profile/data/profile_automation_repository.dart';
+import 'camera_picker.dart';
 
 class DocumentScannerDialog extends ConsumerStatefulWidget {
   const DocumentScannerDialog({required this.onDataExtracted, super.key});
@@ -30,6 +31,39 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
   String? _error;
   Map<String, dynamic>? _scanResult;
   String? _selectedSample;
+
+  Future<void> _captureOrUpload({required bool useCamera}) async {
+    setState(() {
+      _isScanning = true;
+      _error = null;
+    });
+
+    try {
+      final base64Image = await pickOrCaptureImage(useCamera: useCamera);
+      if (base64Image == null) {
+        if (mounted) setState(() => _isScanning = false);
+        return;
+      }
+
+      final repo = ref.read(profileAutomationRepositoryProvider);
+      final res = await repo.extractDocument(
+        imageBase64: base64Image,
+        documentHint: 'auto',
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _scanResult = res;
+        _isScanning = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not process document image. Please try again or select a sample.';
+        _isScanning = false;
+      });
+    }
+  }
 
   static const _sampleDocuments = [
     (
@@ -206,31 +240,57 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Camera / Upload placeholder
+        // Interactive Camera / Upload Area
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           decoration: BoxDecoration(
             color: colors.surfaceMuted,
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            border: Border.all(color: colors.divider, style: BorderStyle.solid),
+            border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.4), style: BorderStyle.solid),
           ),
-          child: Column(
-            children: [
-              Icon(Icons.add_a_photo_outlined, size: 40, color: colors.brand),
-              const SizedBox(height: 8),
-              Text(
-                strings.isHindi ? 'आधार या सरकारी पहचान पत्र की फोटो लें' : 'Upload or Photo of Govt Document',
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                strings.isHindi
-                    ? 'Aadhaar, PAN, Voter ID, Ration Card समर्थित हैं'
-                    : 'Aadhaar Card, PAN Card, Voter ID, Ration Card supported',
-                style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              children: [
+                Icon(Icons.add_a_photo_outlined, size: 40, color: const Color(0xFF2563EB)),
+                const SizedBox(height: 8),
+                Text(
+                  strings.isHindi ? 'आधार या सरकारी पहचान पत्र की फोटो लें' : 'Upload or Photo of Govt Document',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  strings.isHindi
+                      ? 'Aadhaar, PAN, Voter ID, Ration Card समर्थित हैं'
+                      : 'Aadhaar Card, PAN Card, Voter ID, Ration Card supported',
+                  style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      onPressed: _isScanning ? null : () => _captureOrUpload(useCamera: true),
+                      icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                      label: Text(strings.isHindi ? 'कैमरा खोलें' : 'Open Camera'),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      onPressed: _isScanning ? null : () => _captureOrUpload(useCamera: false),
+                      icon: const Icon(Icons.upload_file_rounded, size: 18),
+                      label: Text(strings.isHindi ? 'फ़ाइल अपलोड' : 'Upload Image'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
