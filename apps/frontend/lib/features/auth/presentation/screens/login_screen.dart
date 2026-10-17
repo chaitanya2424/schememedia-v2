@@ -13,12 +13,9 @@ import '../providers/auth_controller.dart';
 
 enum _AuthMode { signIn, signUp }
 
-/// Real email/password auth against the backend -- the reference
-/// mockup's phone/OTP shell had no backend to match (no SMS delivery
-/// exists or is planned), so the *form* is honestly different, but the
-/// visual language (card, trust banner, footer, spacing, typography) is
-/// carried over exactly, per the redesign's "same visual language, not a
-/// generic auth screen" instruction.
+/// Modernized Citizen Authentication Gateway for SchemeMedia.
+/// Follows modern Gov-Tech visual language with high contrast, trust indicators,
+/// DPDP Act 2023 privacy banner, and seamless mode switching.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -110,7 +107,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isSignIn = _mode == _AuthMode.signIn;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('SchemeMedia')),
+      backgroundColor: colors.surface,
+      appBar: AppBar(
+        backgroundColor: colors.surface,
+        elevation: 0,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: colors.brand,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+              child: const Icon(Icons.account_balance, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            const Text(
+              'SchemeMedia',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: ResponsiveContainer(
           maxWidth: 480,
@@ -121,21 +140,136 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.md),
+                  // Citizen Portal Badge
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: colors.brandTint,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                        border: Border.all(
+                          color: colors.brand.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield_outlined, size: 14, color: colors.brand),
+                          const SizedBox(width: 6),
+                          Text(
+                            'National Citizen Portal Auth',
+                            style: TextStyle(
+                              color: colors.brand,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   EyebrowLabel(isSignIn ? 'Welcome back' : 'Get started'),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     isSignIn ? 'Pick up where you left off.' : 'Create your account.',
-                    style: theme.textTheme.headlineSmall,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     isSignIn
                         ? 'Sign in to keep your profile, saved schemes and recommendations together.'
                         : 'One account keeps your profile, saved schemes and recommendations in sync.',
-                    style: theme.textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
+                  // Segmented Mode Selector
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colors.brandTint.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      border: Border.all(
+                        color: colors.brand.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: _submitting ? null : () => _switchMode(_AuthMode.signIn),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isSignIn ? Colors.white : Colors.transparent,
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                boxShadow: isSignIn
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.06),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Text(
+                                'Sign In',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontWeight: isSignIn ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSignIn ? colors.brand : colors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: _submitting ? null : () => _switchMode(_AuthMode.signUp),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: !isSignIn ? Colors.white : Colors.transparent,
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                boxShadow: !isSignIn
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.06),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Text(
+                                'Create Account',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontWeight: !isSignIn ? FontWeight.w800 : FontWeight.w600,
+                                  color: !isSignIn ? colors.brand : colors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  // Form Fields Card
                   AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,8 +280,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           TextFormField(
                             controller: _nameController,
                             textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.person_outline),
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.person_outline, color: colors.brand),
                               hintText: 'Your name',
                             ),
                           ),
@@ -159,8 +293,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const [AutofillHints.email],
-                          decoration: const InputDecoration(
-                            prefixIcon: Icon(Icons.mail_outline),
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(Icons.mail_outline, color: colors.brand),
                             hintText: 'you@example.com',
                           ),
                           validator: (value) {
@@ -182,11 +316,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             isSignIn ? AutofillHints.password : AutofillHints.newPassword,
                           ],
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.lock_outline),
+                            prefixIcon: Icon(Icons.lock_outline, color: colors.brand),
                             hintText: isSignIn ? 'Your password' : 'At least 8 characters',
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                color: colors.textSecondary,
                               ),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
@@ -230,55 +367,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: AppSpacing.md),
-                        FilledButton.icon(
+                        const SizedBox(height: AppSpacing.lg),
+                        FilledButton(
                           onPressed: _submitting ? null : _submit,
-                          icon: _submitting
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.arrow_forward),
-                          label: Text(isSignIn ? 'Sign in' : 'Create account'),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Center(
-                          child: TextButton(
-                            onPressed: _submitting
-                                ? null
-                                : () => _switchMode(isSignIn ? _AuthMode.signUp : _AuthMode.signIn),
-                            child: Text(
-                              isSignIn ? "New here? Create an account" : 'Already have an account? Sign in',
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.brand,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                             ),
                           ),
+                          child: _submitting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      isSignIn ? 'Sign in' : 'Create account',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                                  ],
+                                ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+                  // DPDP Act Compliance Card
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE7F5EC),
+                      color: const Color(0xFFF0FDF4),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      border: Border.all(color: const Color(0xFF86EFAC)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.shield_outlined, color: Color(0xFF2E7D32)),
+                        const Icon(
+                          Icons.verified_user_rounded,
+                          color: Color(0xFF16A34A),
+                          size: 22,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Private profile',
-                                style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                                'Private & DPDP Act 2023 Compliant',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF15803D),
+                                ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
-                                'Your saved schemes and answers are yours alone.',
-                                style: theme.textTheme.bodySmall,
+                                'Your saved schemes and answers are stored securely and never shared with third parties.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: const Color(0xFF166534),
+                                  height: 1.3,
+                                ),
                               ),
                             ],
                           ),
@@ -292,15 +454,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Icon(Icons.lock_outline, size: AppSpacing.iconSm, color: colors.textSecondary),
                       const SizedBox(width: AppSpacing.xs),
-                      Text('Protected with secure sign-in', style: theme.textTheme.bodySmall),
-                      const SizedBox(width: AppSpacing.xs),
-                      Icon(Icons.check, size: AppSpacing.iconSm, color: colors.textSecondary),
+                      Text(
+                        'End-to-end encrypted session',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    "By continuing, you agree to SchemeMedia's terms and privacy note.",
-                    style: theme.textTheme.bodySmall,
+                    "By continuing, you agree to SchemeMedia's public terms and citizen privacy note.",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],

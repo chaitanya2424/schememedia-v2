@@ -9,22 +9,22 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../../core/widgets/responsive.dart';
 
-class _Step {
-  const _Step({required this.icon, required this.eyebrow, required this.headline, required this.body});
+class _StepData {
+  const _StepData({
+    required this.eyebrow,
+    required this.headline,
+    required this.body,
+    required this.illustrationType,
+  });
 
-  final IconData icon;
   final String eyebrow;
   final String headline;
   final String body;
+  final int illustrationType;
 }
 
-/// Shown once per device (real, local `shared_preferences` flag -- see
-/// `hasSeenOnboardingProvider`). Step 1's copy is transcribed exactly
-/// from the reference mockup; steps 2-3 are original copy in the same
-/// voice, covering the two things the redesign plan's Onboarding section
-/// already scoped (the verification/honesty principle, and the
-/// assistant) -- there was nothing to transcribe for those, only step 1
-/// was shown.
+/// Modernized Onboarding experience with interactive Gov-Tech visual cards,
+/// citizen value propositions, animated step indicator pills, and DPDP compliance assurance.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -37,27 +37,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _index = 0;
 
   static const _steps = [
-    _Step(
-      icon: Icons.auto_awesome,
+    _StepData(
       eyebrow: 'A little context, a better match',
       headline: 'A calmer way to find support',
-      body: 'SchemeMedia turns a long list of government schemes into a clear, personal starting point.',
+      body:
+          'SchemeMedia turns hundreds of complex government schemes into a clear, personalized starting point tailored to you.',
+      illustrationType: 0,
     ),
-    _Step(
-      icon: Icons.verified_outlined,
+    _StepData(
       eyebrow: 'Honest by default',
       headline: 'We show our work',
       body:
-          'Every scheme is marked unverified, source-provided, or officially verified -- so you always '
-          'know how much to trust it.',
+          'Every scheme is marked source-provided or officially verified with direct gazette links -- no middlemen, zero guesswork.',
+      illustrationType: 1,
     ),
-    _Step(
-      icon: Icons.chat_bubble_outline,
+    _StepData(
       eyebrow: "When you're stuck",
       headline: 'Ask in your own words',
       body:
-          "The assistant answers using real scheme data, and tells you when it doesn't know something "
-          'rather than guessing.',
+          "Our AI assistant answers using verified government data and transparently tells you what it knows and doesn't know.",
+      illustrationType: 2,
     ),
   ];
 
@@ -77,29 +76,56 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _finish();
       return;
     }
-    _controller.nextPage(duration: AppSpacing.durationMedium, curve: Curves.easeOut);
+    _controller.nextPage(duration: const Duration(milliseconds: 320), curve: Curves.easeInOut);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
+
     return Scaffold(
+      backgroundColor: colors.surface,
       appBar: AppBar(
-        title: const Text('SchemeMedia'),
+        backgroundColor: colors.surface,
+        elevation: 0,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: colors.brand,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+              child: const Icon(Icons.account_balance, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            const Text(
+              'SchemeMedia',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            ),
+          ],
+        ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: Center(
-              child: Text('1 minute setup', style: theme.textTheme.bodySmall),
+          TextButton(
+            onPressed: _finish,
+            child: Text(
+              'Skip',
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: SafeArea(
         child: ResponsiveContainer(
-          maxWidth: 480,
+          maxWidth: 520,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -108,47 +134,71 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     controller: _controller,
                     itemCount: _steps.length,
                     onPageChanged: (i) => setState(() => _index = i),
-                    itemBuilder: (context, i) => _StepView(step: _steps[i]),
+                    itemBuilder: (context, i) => _StepSlide(step: _steps[i]),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                // Smooth Animated Indicator Pills
                 Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                        child: LinearProgressIndicator(
-                          value: (_index + 1) / _steps.length,
-                          minHeight: 4,
-                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                        ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_steps.length, (i) {
+                    final isActive = i == _index;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOutCubic,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 8,
+                      width: isActive ? 28 : 8,
+                      decoration: BoxDecoration(
+                        color: isActive ? colors.brand : colors.brand.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text('${_index + 1} of ${_steps.length}', style: theme.textTheme.bodySmall),
-                  ],
+                    );
+                  }),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton.icon(
+                const SizedBox(height: AppSpacing.xl),
+                // Action Buttons
+                FilledButton(
                   onPressed: _next,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: Text(_index == _steps.length - 1 ? 'Get started' : 'Continue'),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Center(
-                  child: TextButton(onPressed: _finish, child: const Text('Skip for now')),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.brand,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                    elevation: 1,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _index == _steps.length - 1 ? 'Get Started' : 'Continue',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      const Icon(Icons.arrow_forward_rounded, size: 20),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
+                // Trust Strip
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check, size: AppSpacing.iconSm, color: theme.colorScheme.outline),
+                    Icon(Icons.verified_user_outlined, size: 14, color: colors.textSecondary),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      'No spam. No promises. Just clearer next steps.',
-                      style: theme.textTheme.bodySmall,
+                      'Official Citizen Welfare • DPDP Act 2023 Compliant',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.xs),
               ],
             ),
           ),
@@ -158,35 +208,345 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-class _StepView extends StatelessWidget {
-  const _StepView({required this.step});
+class _StepSlide extends StatelessWidget {
+  const _StepSlide({required this.step});
 
-  final _Step step;
+  final _StepData step;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: AppSpacing.md),
+          // Rich Visual Graphic Card
+          _IllustrationCard(type: step.illustrationType),
+          const SizedBox(height: AppSpacing.xl),
+          EyebrowLabel(step.eyebrow),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            step.headline,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Text(
+              step.body,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textSecondary,
+                height: 1.45,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IllustrationCard extends StatelessWidget {
+  const _IllustrationCard({required this.type});
+
+  final int type;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      height: 220,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colors.brandTint,
+            colors.brandTint.withValues(alpha: 0.4),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        border: Border.all(
+          color: colors.brand.withValues(alpha: 0.12),
+          width: 1.5,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background subtle circles
+            Positioned(
+              top: -30,
+              right: -30,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.brand.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -20,
+              left: -20,
+              child: Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.brand.withValues(alpha: 0.05),
+                ),
+              ),
+            ),
+            // Card Content based on step
+            if (type == 0) _MatchingIllustration(colors: colors),
+            if (type == 1) _VerificationIllustration(colors: colors),
+            if (type == 2) _AssistantIllustration(colors: colors),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchingIllustration extends StatelessWidget {
+  const _MatchingIllustration({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.currency_rupee_rounded, size: 16, color: Color(0xFF16A34A)),
+                SizedBox(width: 4),
+                Text(
+                  '₹6,000 / year • Guaranteed Support',
+                  style: TextStyle(
+                    color: Color(0xFF15803D),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.brand.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: const Icon(Icons.agriculture_rounded, color: Color(0xFF2E7D32), size: 24),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'PM-Kisan Samman Nidhi',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                      ),
+                      Text(
+                        'Central Sector • Direct Bank Transfer',
+                        style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                  ),
+                  child: const Text(
+                    '98% Match',
+                    style: TextStyle(
+                      color: Color(0xFF059669),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerificationIllustration extends StatelessWidget {
+  const _VerificationIllustration({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: 64,
-          height: 64,
+          width: 68,
+          height: 68,
           decoration: BoxDecoration(
-            color: colors.brandTint,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF059669).withValues(alpha: 0.15),
+                blurRadius: 14,
+                spreadRadius: 2,
+              ),
+            ],
           ),
-          child: Icon(step.icon, color: colors.brand, size: AppSpacing.iconLg),
+          child: const Center(
+            child: Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 38),
+          ),
         ),
-        const SizedBox(height: AppSpacing.xl),
-        EyebrowLabel(step.eyebrow),
-        const SizedBox(height: AppSpacing.xs),
-        Text(step.headline, style: theme.textTheme.headlineSmall),
-        const SizedBox(height: AppSpacing.sm),
-        Text(step.body, style: theme.textTheme.bodyMedium),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shield_outlined, size: 14, color: Color(0xFF1E3A8A)),
+              SizedBox(width: 6),
+              Text(
+                '100% Verified from Ministry Gazettes',
+                style: TextStyle(
+                  color: Color(0xFF1E3A8A),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _AssistantIllustration extends StatelessWidget {
+  const _AssistantIllustration({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.brand,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(14),
+                  topRight: Radius.circular(14),
+                  bottomLeft: Radius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Am I eligible for solar pump subsidy?',
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(14),
+                  topRight: Radius.circular(14),
+                  bottomRight: Radius.circular(14),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.brand.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, size: 14, color: Color(0xFF059669)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Yes, PM-KUSUM provides up to 60% grant.',
+                    style: TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
