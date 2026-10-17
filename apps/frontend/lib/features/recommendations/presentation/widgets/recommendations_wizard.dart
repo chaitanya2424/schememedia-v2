@@ -195,18 +195,29 @@ class _WizardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
-      child: Column(
-        children: [
-          Row(
+    final progress = (index / _totalQuestions).clamp(0.0, 1.0);
+
+    return Column(
+      children: [
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: const Color(0xFFE2E8F0),
+          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1E3A8A)),
+          minHeight: 4,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+          child: Row(
             children: [
-              IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back)),
+              IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back_rounded), tooltip: 'Back'),
               Expanded(
                 child: Text(
-                  'Optional setup · $_totalQuestions signals available',
+                  'Step $index · $_totalQuestions signals available',
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF475569),
+                  ),
                 ),
               ),
               TextButton(
@@ -216,8 +227,8 @@ class _WizardHeader extends StatelessWidget {
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -229,22 +240,37 @@ class _QueryStep extends StatelessWidget {
   final String? error;
   final VoidCallback onSubmit;
 
+  static const _suggestions = [
+    'farmer subsidy',
+    'scholarship',
+    'housing grant',
+    'health insurance',
+    'small business loan',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const EyebrowLabel('Your recommendation path'),
+          const EyebrowLabel('PERSONALIZED ELIGIBILITY WIZARD'),
           const SizedBox(height: AppSpacing.xs),
-          Text('What are you looking for?', style: theme.textTheme.headlineSmall),
+          Text(
+            'What are you looking for?',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             'About 2 min · skip anytime. We\'ll rank real schemes by how well they fit.',
-            style: theme.textTheme.bodySmall,
+            style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.lg),
           TextField(
@@ -254,16 +280,54 @@ class _QueryStep extends StatelessWidget {
             decoration: InputDecoration(
               hintText: 'e.g. farmer subsidy, scholarship',
               errorText: error,
+              prefixIcon: const Icon(Icons.search_rounded),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              ),
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => onSubmit(),
           ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final s in _suggestions)
+                InkWell(
+                  onTap: () {
+                    controller.text = s;
+                    onSubmit();
+                  },
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceMuted,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                      border: Border.all(color: colors.divider),
+                    ),
+                    child: Text(
+                      s,
+                      style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            key: const ValueKey('recommendations_wizard_continue_button'),
-            onPressed: onSubmit,
-            icon: const Icon(Icons.arrow_forward),
-            label: const Text('Continue'),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey('recommendations_wizard_continue_button'),
+              onPressed: onSubmit,
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: const Text('Continue to Eligibility Questions'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
           ),
         ],
       ),

@@ -139,7 +139,6 @@ class _WhyTheseMatchesBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = context.colors;
     final passLabels = response.recommendations
         .expand((r) => r.eligibilityRules)
         .where((r) => r.state.name == 'pass')
@@ -153,18 +152,42 @@ class _WhyTheseMatchesBanner extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(color: colors.brandTint, borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: const Color(0xFFA7F3D0)),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_awesome, size: AppSpacing.iconMd, color: colors.brand),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: const BoxDecoration(
+              color: Color(0xFFD1FAE5),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF059669)),
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Why these matches?', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
-                Text(body, style: theme.textTheme.bodySmall),
+                Text(
+                  'Why these matches?',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF065F46),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  body,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF047857),
+                    height: 1.4,
+                  ),
+                ),
               ],
             ),
           ),
@@ -183,19 +206,34 @@ class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: colors.surfaceMuted,
+        color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: const Color(0xFFFDE68A)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: AppSpacing.iconMd, color: colors.textSecondary),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFEF3C7),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 18, color: const Color(0xFFD97706)),
+          ),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF92400E),
+                height: 1.4,
+              ),
+            ),
+          ),
         ],
       ),
     );
