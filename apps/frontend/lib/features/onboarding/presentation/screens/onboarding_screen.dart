@@ -7,6 +7,8 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../../core/localization/app_strings.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 
 class _StepData {
@@ -15,12 +17,18 @@ class _StepData {
     required this.headline,
     required this.body,
     required this.illustrationType,
+    required this.eyebrowHi,
+    required this.headlineHi,
+    required this.bodyHi,
   });
 
   final String eyebrow;
   final String headline;
   final String body;
   final int illustrationType;
+  final String eyebrowHi;
+  final String headlineHi;
+  final String bodyHi;
 }
 
 /// Modernized Onboarding experience with interactive Gov-Tech visual cards,
@@ -43,6 +51,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       body:
           'SchemeMedia turns hundreds of complex government schemes into a clear, personalized starting point tailored to you.',
       illustrationType: 0,
+      eyebrowHi: 'थोड़ी जानकारी, बेहतर योजना मिलान',
+      headlineHi: 'सरकारी सहायता पाने का आसान तरीका',
+      bodyHi: 'स्कीम मीडिया सैकड़ों जटिल सरकारी योजनाओं को आपके लिए एक स्पष्ट, व्यक्तिगत और पारदर्शी सूची में बदलता है।',
     ),
     _StepData(
       eyebrow: 'Honest by default',
@@ -50,6 +61,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       body:
           'Every scheme is marked source-provided or officially verified with direct gazette links -- no middlemen, zero guesswork.',
       illustrationType: 1,
+      eyebrowHi: 'सत्यापित व पारदर्शी',
+      headlineHi: 'हम स्रोत दिखाते हैं',
+      bodyHi: 'प्रत्येक योजना आधिकारिक पोर्टल या राजपत्र से सीधे सत्यापित होती है -- कोई बिचौलिया नहीं, कोई भ्रामक दावा नहीं।',
     ),
     _StepData(
       eyebrow: "When you're stuck",
@@ -57,6 +71,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       body:
           "Our AI assistant answers using verified government data and transparently tells you what it knows and doesn't know.",
       illustrationType: 2,
+      eyebrowHi: 'जब भी कोई संशय हो',
+      headlineHi: 'अपनी भाषा में पूछें',
+      bodyHi: 'हमारा एआई सहायक सत्यापित सरकारी डेटा का उपयोग करके उत्तर देता है और नियमों की स्पष्ट जानकारी देता है।',
     ),
   ];
 
@@ -84,6 +101,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final theme = Theme.of(context);
     final colors = context.colors;
 
+    final lang = ref.watch(languageProvider);
+    final isHindi = lang == AppLanguage.hindi;
+    final strings = AppStrings(lang);
+
     return Scaffold(
       backgroundColor: colors.surface,
       appBar: AppBar(
@@ -108,10 +129,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ],
         ),
         actions: [
+          const LanguageToggleButton(),
+          const SizedBox(width: AppSpacing.xs),
           TextButton(
             onPressed: _finish,
             child: Text(
-              'Skip',
+              strings.skip,
               style: TextStyle(
                 color: colors.textSecondary,
                 fontWeight: FontWeight.w600,
@@ -173,7 +196,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _index == _steps.length - 1 ? 'Get Started' : 'Continue',
+                        _index == _steps.length - 1 ? strings.getStarted : strings.continueText,
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -189,7 +212,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     Icon(Icons.verified_user_outlined, size: 14, color: colors.textSecondary),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      'Official Citizen Welfare • DPDP Act 2023 Compliant',
+                      isHindi
+                          ? 'आधिकारिक नागरिक कल्याण • DPDP अधिनियम 2023 के अनुरूप'
+                          : 'Official Citizen Welfare • DPDP Act 2023 Compliant',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.textSecondary,
                         fontSize: 12,
@@ -208,15 +233,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-class _StepSlide extends StatelessWidget {
+class _StepSlide extends ConsumerWidget {
   const _StepSlide({required this.step});
 
   final _StepData step;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final isHindi = ref.watch(languageProvider) == AppLanguage.hindi;
 
     return SingleChildScrollView(
       child: Column(
@@ -226,10 +252,10 @@ class _StepSlide extends StatelessWidget {
           // Rich Visual Graphic Card
           _IllustrationCard(type: step.illustrationType),
           const SizedBox(height: AppSpacing.xl),
-          EyebrowLabel(step.eyebrow),
+          EyebrowLabel(isHindi ? step.eyebrowHi : step.eyebrow),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            step.headline,
+            isHindi ? step.headlineHi : step.headline,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
@@ -240,7 +266,7 @@ class _StepSlide extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Text(
-              step.body,
+              isHindi ? step.bodyHi : step.body,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
                 height: 1.45,

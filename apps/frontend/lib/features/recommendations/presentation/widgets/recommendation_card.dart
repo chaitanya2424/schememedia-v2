@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/localization/app_strings.dart';
 
 import '../../../../core/domain/enums.dart';
 import '../../../../core/router/routes.dart';
@@ -67,7 +70,7 @@ class _RecommendationCardState extends State<RecommendationCard> {
   }
 }
 
-class _RuleSection extends StatelessWidget {
+class _RuleSection extends ConsumerWidget {
   const _RuleSection({required this.rules, required this.expanded, required this.onToggle});
 
   final List<EligibilityRule> rules;
@@ -75,7 +78,8 @@ class _RuleSection extends StatelessWidget {
   final VoidCallback onToggle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(stringsProvider);
     final unknownCount = rules.where((r) => r.state == EligibilityState.unknown).length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,12 +91,12 @@ class _RuleSection extends StatelessWidget {
             TextButton.icon(
               onPressed: onToggle,
               icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(expanded ? 'Hide eligibility details' : 'Why? (${rules.length})'),
+              label: Text(expanded ? strings.hideEligibilityDetails : strings.whyWithCount(rules.length)),
             ),
             if (unknownCount > 0)
               StatusPill(
                 icon: Icons.help_outline,
-                label: '$unknownCount unknown',
+                label: strings.unknownWithCount(unknownCount),
                 color: Theme.of(context).colorScheme.tertiary,
               ),
           ],
@@ -107,15 +111,16 @@ class _RuleSection extends StatelessWidget {
   }
 }
 
-class _RuleExplanation extends StatelessWidget {
+class _RuleExplanation extends ConsumerWidget {
   const _RuleExplanation({required this.rule});
 
   final EligibilityRule rule;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final strings = ref.watch(stringsProvider);
     final color = StatusColors.eligibility(rule.state, scheme);
     final icon = switch (rule.state) {
       EligibilityState.pass => Icons.check_circle_outline,
@@ -124,6 +129,8 @@ class _RuleExplanation extends StatelessWidget {
       EligibilityState.notApplicable => Icons.remove_circle_outline,
       EligibilityState.unrecognized => Icons.help_outline,
     };
+    final effectiveLabel = (strings.isHindi && rule.labelHi != null) ? rule.labelHi! : rule.label;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
@@ -136,11 +143,11 @@ class _RuleExplanation extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  rule.label,
+                  effectiveLabel,
                   style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(rule.explanation, style: theme.textTheme.bodySmall),
-                if (rule.labelHi != null)
+                if (!strings.isHindi && rule.labelHi != null)
                   Text(rule.labelHi!, style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline)),
               ],
             ),

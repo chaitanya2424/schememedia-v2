@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/domain/enums.dart';
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/async_value_view.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
@@ -56,14 +58,22 @@ class _SchemeDetailScreenState extends ConsumerState<SchemeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(schemeDetailProvider(widget.identifier));
-    // The scheme's own name, once loaded, instead of the generic literal
-    // "Scheme details" the AppBar previously always showed -- watched
-    // independently of the body below so the title updates the moment
-    // data arrives without needing its own AsyncValueView.
-    final title = detailAsync.value?.name ?? 'Scheme details';
+    final lang = ref.watch(languageProvider);
+    final detail = detailAsync.value;
+    final title = (lang == AppLanguage.hindi && detail?.nameHi != null)
+        ? detail!.nameHi!
+        : (detail?.name ?? (lang == AppLanguage.hindi ? 'योजना विवरण' : 'Scheme details'));
 
     return Scaffold(
-      appBar: AppBar(title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+      appBar: AppBar(
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: LanguageToggleButton(),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ResponsiveContainer(
           maxWidth: AppSpacing.maxWideContentWidth,
@@ -143,7 +153,7 @@ class _DetailBody extends StatelessWidget {
   }
 }
 
-class _PrimaryColumn extends StatelessWidget {
+class _PrimaryColumn extends ConsumerWidget {
   const _PrimaryColumn({
     required this.detail,
     required this.eligibilityRules,
@@ -160,28 +170,40 @@ class _PrimaryColumn extends StatelessWidget {
   final bool includeKeyFacts;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     final jurisdictionLabel = switch (detail.jurisdiction) {
-      Jurisdiction.central => 'Government of India',
-      Jurisdiction.state => detail.stateCode != null ? 'Government of ${detail.stateCode}' : 'State government',
+      Jurisdiction.central => strings.governmentOfIndia,
+      Jurisdiction.state => detail.stateCode != null
+          ? (lang == AppLanguage.hindi ? '${detail.stateCode} राज्य सरकार' : 'Government of ${detail.stateCode}')
+          : strings.stateGovernment,
       Jurisdiction.unrecognized => null,
     };
+    final categoryLabel = detail.category != null ? strings.categoryName(detail.category!) : null;
     final rules = eligibilityRules;
+
+    final primaryName = (lang == AppLanguage.hindi && detail.nameHi != null)
+        ? detail.nameHi!
+        : detail.name;
+    final secondaryName = (lang == AppLanguage.hindi && detail.nameHi != null)
+        ? detail.name
+        : detail.nameHi;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (detail.category != null || jurisdictionLabel != null)
+        if (categoryLabel != null || jurisdictionLabel != null)
           EyebrowLabel(
-            [detail.category, jurisdictionLabel].whereType<String>().join(' · '),
+            [categoryLabel, jurisdictionLabel].whereType<String>().join(' · '),
           ),
         const SizedBox(height: AppSpacing.xs),
-        Text(detail.name, style: theme.textTheme.headlineSmall),
-        if (detail.nameHi != null) ...[
+        Text(primaryName, style: theme.textTheme.headlineSmall),
+        if (secondaryName != null) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
-            detail.nameHi!,
+            secondaryName,
             style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.outline),
           ),
         ],
@@ -201,17 +223,17 @@ class _PrimaryColumn extends StatelessWidget {
         _OverviewCard(detail: detail),
         if (detail.descriptionLong != null) ...[
           const SizedBox(height: AppSpacing.lg),
-          const SectionHeader('About'),
+          SectionHeader(strings.aboutScheme),
           _ExpandableText(detail.descriptionLong!),
         ],
         if (detail.benefits.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
-          const SectionHeader('What you may receive'),
+          SectionHeader(strings.whatYouMayReceive),
           _BenefitsCard(benefits: detail.benefits),
         ],
         if (rules != null && rules.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
-          SectionHeader('Eligibility, explained', key: eligibilityKey),
+          SectionHeader(strings.eligibilityExplained, key: eligibilityKey),
           _EligibilityExplainedCard(rules: rules),
         ],
         if (detail.documents.isNotEmpty) ...[
@@ -220,7 +242,7 @@ class _PrimaryColumn extends StatelessWidget {
         ],
         if (detail.tags.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
-          const SectionHeader('Tags'),
+          SectionHeader(lang == AppLanguage.hindi ? 'टैग' : 'Tags'),
           Wrap(
             spacing: AppSpacing.xs,
             runSpacing: AppSpacing.xs,
@@ -228,7 +250,7 @@ class _PrimaryColumn extends StatelessWidget {
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
-        const SectionHeader('Comments'),
+        SectionHeader(lang == AppLanguage.hindi ? 'नागरिक टिप्पणियां' : 'Comments'),
         _CommentsSection(schemeId: detail.schemeId),
         const SizedBox(height: AppSpacing.xl),
       ],
@@ -239,27 +261,31 @@ class _PrimaryColumn extends StatelessWidget {
 /// Real, templated from the actual PASS rules carried in from For You/
 /// Home -- never hand-written placeholder copy. Absent entirely when no
 /// eligibility context was passed in (Explore, Assistant evidence).
-class _WhyThisLooksPromisingCard extends StatelessWidget {
+class _WhyThisLooksPromisingCard extends ConsumerWidget {
   const _WhyThisLooksPromisingCard({required this.rules});
 
   final List<EligibilityRule> rules;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     final passLabels = rules
         .where((r) => r.state == EligibilityState.pass)
-        .map((r) => r.label)
+        .map((r) => (lang == AppLanguage.hindi && r.labelHi != null) ? r.labelHi! : r.label)
         .take(2)
         .toList();
     final unknownCount = rules.where((r) => r.state == EligibilityState.unknown).length;
     if (passLabels.isEmpty) return const SizedBox.shrink();
 
-    final body = StringBuffer('Your ${passLabels.join(' and ')} match');
-    body.write(passLabels.length == 1 ? 'es' : '');
-    body.write(' the first eligibility signals we could verify.');
+    final body = StringBuffer(lang == AppLanguage.hindi
+        ? 'आपकी ${passLabels.join(' और ')} जानकारी जांची गई प्राथमिक पात्रता शर्तों से मेल खाती है।'
+        : 'Your ${passLabels.join(' and ')} match${passLabels.length == 1 ? 'es' : ''} the first eligibility signals we could verify.');
     if (unknownCount > 0) {
-      body.write(' $unknownCount detail${unknownCount == 1 ? '' : 's'} still need checking.');
+      body.write(lang == AppLanguage.hindi
+          ? ' $unknownCount विवरण की अभी जांच बाकी है।'
+          : ' $unknownCount detail${unknownCount == 1 ? '' : 's'} still need checking.');
     }
 
     return Container(
@@ -286,7 +312,7 @@ class _WhyThisLooksPromisingCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Why this looks promising for you',
+                  strings.whyThisLooksPromising,
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF065F46),
@@ -312,25 +338,28 @@ class _WhyThisLooksPromisingCard extends StatelessWidget {
 /// Ministry/category/jurisdiction/deadline -- previously a dense, unstyled
 /// two-column text list (fixed 110px label column, no icons). Grouped into
 /// one card with an icon per fact for scannability.
-class _OverviewCard extends StatelessWidget {
+class _OverviewCard extends ConsumerWidget {
   const _OverviewCard({required this.detail});
 
   final SchemeDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     final jurisdictionLabel = switch (detail.jurisdiction) {
-      Jurisdiction.central => 'Central government',
-      Jurisdiction.state => detail.stateCode != null ? 'State (${detail.stateCode})' : 'State',
+      Jurisdiction.central => strings.centralGov,
+      Jurisdiction.state => detail.stateCode != null ? strings.stateWithCode(detail.stateCode!) : strings.stateGov,
       Jurisdiction.unrecognized => null,
     };
+    final categoryVal = detail.category != null ? strings.categoryName(detail.category!) : null;
     final rows = [
-      (icon: Icons.account_balance_outlined, label: 'Ministry', value: detail.ministry),
-      (icon: Icons.category_outlined, label: 'Category', value: detail.category),
-      (icon: Icons.public_outlined, label: 'Jurisdiction', value: jurisdictionLabel),
+      (icon: Icons.account_balance_outlined, label: strings.ministryLabel, value: detail.ministry),
+      (icon: Icons.category_outlined, label: strings.categoryLabel, value: categoryVal),
+      (icon: Icons.public_outlined, label: strings.jurisdictionFieldLabel, value: jurisdictionLabel),
       (
         icon: Icons.event_outlined,
-        label: 'Application deadline',
+        label: strings.applicationDeadlineLabel,
         value: detail.applicationDeadline,
       ),
     ].where((r) => r.value != null).toList();
@@ -390,13 +419,14 @@ class _OverviewRow extends StatelessWidget {
 /// Verification status, the official-link CTA, and the read-only stat
 /// counts -- grouped as one card so they can move as a unit into a sticky
 /// sidebar on wide layouts instead of being scattered through the page.
-class _KeyFactsCard extends StatelessWidget {
+class _KeyFactsCard extends ConsumerWidget {
   const _KeyFactsCard({required this.detail});
 
   final SchemeDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(stringsProvider);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,18 +450,18 @@ class _KeyFactsCard extends StatelessWidget {
               _StatCount(
                 icon: Icons.bookmark_border,
                 count: detail.saveCount,
-                label: 'saves',
+                label: strings.savesStat,
               ),
               _StatCount(
                 icon: Icons.comment_outlined,
                 count: detail.commentCount,
-                label: 'comments',
+                label: strings.commentsStat,
               ),
               if (detail.averageRating != null)
                 _StatCount(
                   icon: Icons.star_border,
                   count: detail.averageRating!.toStringAsFixed(1),
-                  label: 'average rating',
+                  label: strings.averageRatingStat,
                 ),
             ],
           ),
@@ -524,9 +554,11 @@ class _LikeButtonState extends ConsumerState<_LikeButton> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     final liked = _liked ?? false;
     return Semantics(
-      label: 'likes: $_count${liked ? ', liked by you' : ''}',
+      label: '${strings.likesStat}: $_count${liked ? (lang == AppLanguage.hindi ? ', आपकी पसंद' : ', liked by you') : ''}',
       button: true,
       child: InkWell(
         key: const ValueKey('scheme_detail_like_button'),
@@ -548,7 +580,7 @@ class _LikeButtonState extends ConsumerState<_LikeButton> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'likes',
+                    strings.likesStat,
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
                   ),
                   Text(
@@ -570,20 +602,21 @@ class _LikeButtonState extends ConsumerState<_LikeButton> {
 
 /// Long descriptions previously rendered as one unbounded block of text --
 /// collapses to 4 lines with a "Read more"/"Show less" toggle.
-class _ExpandableText extends StatefulWidget {
+class _ExpandableText extends ConsumerStatefulWidget {
   const _ExpandableText(this.text);
 
   final String text;
 
   @override
-  State<_ExpandableText> createState() => _ExpandableTextState();
+  ConsumerState<_ExpandableText> createState() => _ExpandableTextState();
 }
 
-class _ExpandableTextState extends State<_ExpandableText> {
+class _ExpandableTextState extends ConsumerState<_ExpandableText> {
   bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -598,7 +631,9 @@ class _ExpandableTextState extends State<_ExpandableText> {
         ),
         TextButton(
           onPressed: () => setState(() => _expanded = !_expanded),
-          child: Text(_expanded ? 'Show less' : 'Read more'),
+          child: Text(_expanded
+              ? (lang == AppLanguage.hindi ? 'कम दिखाएं' : 'Show less')
+              : (lang == AppLanguage.hindi ? 'और पढ़ें' : 'Read more')),
         ),
       ],
     );
@@ -722,37 +757,48 @@ class _EligibilityRuleRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     final (icon, color, bgColor, caption) = switch (rule.state) {
       EligibilityState.pass => (
         Icons.check_circle_rounded,
         const Color(0xFF15803D),
         const Color(0xFFF0FDF4),
-        'Matched from your profile'
+        strings.matchedFromProfile,
       ),
       EligibilityState.fail => (
         Icons.cancel_rounded,
         Theme.of(context).colorScheme.error,
         const Color(0xFFFEF2F2),
-        "Doesn't match your profile"
+        strings.doesNotMatchProfile,
       ),
       EligibilityState.unknown => (
         Icons.help_outline_rounded,
         const Color(0xFFB45309),
         const Color(0xFFFFFBEB),
-        "We don't have this yet"
+        strings.weDontHaveThisYet,
       ),
       EligibilityState.notApplicable => (
         Icons.remove_circle_outline_rounded,
         theme.colorScheme.outline,
         const Color(0xFFF8FAFC),
-        'Not applicable'
+        strings.notApplicable,
       ),
       EligibilityState.unrecognized => (
         Icons.help_outline_rounded,
         theme.colorScheme.outline,
         const Color(0xFFF8FAFC),
-        'Unknown'
+        lang == AppLanguage.hindi ? 'अज्ञात' : 'Unknown',
       ),
+    };
+
+    final ruleLabel = (lang == AppLanguage.hindi && rule.labelHi != null) ? rule.labelHi! : rule.label;
+    final stateLabel = switch (rule.state) {
+      EligibilityState.pass => lang == AppLanguage.hindi ? 'सत्यापित' : 'PASS',
+      EligibilityState.fail => lang == AppLanguage.hindi ? 'अपात्र' : 'FAIL',
+      EligibilityState.unknown => lang == AppLanguage.hindi ? 'जांचें' : 'UNKNOWN',
+      EligibilityState.notApplicable => lang == AppLanguage.hindi ? 'लागू नहीं' : 'N/A',
+      EligibilityState.unrecognized => lang == AppLanguage.hindi ? 'अज्ञात' : 'UNKNOWN',
     };
 
     return Container(
@@ -773,14 +819,14 @@ class _EligibilityRuleRow extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  rule.label,
+                  ruleLabel,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF0F172A),
                   ),
                 ),
                 Text(
-                  '$caption · ${rule.state.name.toUpperCase()}',
+                  '$caption · $stateLabel',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w500,
@@ -799,7 +845,7 @@ class _EligibilityRuleRow extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 visualDensity: VisualDensity.compact,
               ),
-              child: const Text('Check'),
+              child: Text(strings.checkAction),
             ),
         ],
       ),
@@ -810,15 +856,17 @@ class _EligibilityRuleRow extends ConsumerWidget {
 /// Restyled from a bulleted "Documents required" list into the compact,
 /// tinted "Keep these ready" summary box the reference mockups use --
 /// real document names, still `SchemeDetail.documents`, not invented.
-class _KeepTheseReadyBox extends StatelessWidget {
+class _KeepTheseReadyBox extends ConsumerWidget {
   const _KeepTheseReadyBox({required this.documents});
 
   final List<SchemeDocument> documents;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     final needsReviewCount = documents.where((d) => d.needsReview).length;
 
     return Container(
@@ -843,7 +891,7 @@ class _KeepTheseReadyBox extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Keep these ready',
+                strings.keepTheseReady,
                 style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
@@ -881,8 +929,10 @@ class _KeepTheseReadyBox extends StatelessWidget {
           if (needsReviewCount > 0) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              '$needsReviewCount document${needsReviewCount == 1 ? '' : 's'} could not be confidently '
-              'parsed -- worth double-checking.',
+              lang == AppLanguage.hindi
+                  ? '$needsReviewCount दस्तावेज़ों की स्पष्ट पुष्टि नहीं हो सकी -- पुनः जांच करना उचित होगा।'
+                  : '$needsReviewCount document${needsReviewCount == 1 ? '' : 's'} could not be confidently '
+                      'parsed -- worth double-checking.',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
             ),
           ],
@@ -892,14 +942,16 @@ class _KeepTheseReadyBox extends StatelessWidget {
   }
 }
 
-class _OfficialLink extends StatelessWidget {
+class _OfficialLink extends ConsumerWidget {
   const _OfficialLink({required this.url});
 
   final String? url;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     if (url == null) {
       return Row(
         children: [
@@ -907,7 +959,9 @@ class _OfficialLink extends StatelessWidget {
           const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: Text(
-              'No official link available for this scheme.',
+              lang == AppLanguage.hindi
+                  ? 'इस योजना के लिए कोई आधिकारिक लिंक उपलब्ध नहीं है।'
+                  : 'No official link available for this scheme.',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
             ),
           ),
@@ -919,7 +973,7 @@ class _OfficialLink extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication),
         icon: const Icon(Icons.open_in_new),
-        label: const Text('Visit official page'),
+        label: Text(strings.visitOfficialPage),
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF1E3A8A),
           foregroundColor: Colors.white,
@@ -946,6 +1000,8 @@ class _CommentsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final signedIn = ref.watch(isSignedInProvider);
     final commentsAsync = ref.watch(commentsProvider(schemeId));
+    final lang = ref.watch(languageProvider);
+    final strings = AppStrings.of(lang);
     final theme = Theme.of(context);
 
     return Column(
@@ -959,14 +1015,16 @@ class _CommentsSection extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Sign in to ask a question or share your experience.',
+                    lang == AppLanguage.hindi
+                        ? 'प्रश्न पूछने या अनुभव साझा करने के लिए साइन इन करें।'
+                        : 'Sign in to ask a question or share your experience.',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 TextButton(
                   onPressed: () => context.push(AppRoutes.login),
-                  child: const Text('Sign in'),
+                  child: Text(strings.signIn),
                 ),
               ],
             ),
@@ -978,7 +1036,9 @@ class _CommentsSection extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 child: Text(
-                  'No comments yet. Be the first to ask a question.',
+                  lang == AppLanguage.hindi
+                      ? 'अभी कोई टिप्पणी नहीं है। पहला प्रश्न पूछें।'
+                      : 'No comments yet. Be the first to ask a question.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline),
                 ),
               );
@@ -1002,13 +1062,15 @@ class _CommentsSection extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Comments could not be loaded.',
+                    lang == AppLanguage.hindi
+                        ? 'टिप्पणियां लोड नहीं की जा सकीं।'
+                        : 'Comments could not be loaded.',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
                 TextButton(
                   onPressed: () => ref.invalidate(commentsProvider(schemeId)),
-                  child: const Text('Retry'),
+                  child: Text(strings.retry),
                 ),
               ],
             ),
@@ -1068,6 +1130,7 @@ class _CommentComposerState extends ConsumerState<_CommentComposer> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -1078,7 +1141,11 @@ class _CommentComposerState extends ConsumerState<_CommentComposer> {
             minLines: 1,
             maxLines: 4,
             enabled: !_posting,
-            decoration: const InputDecoration(hintText: 'Ask a question or leave a comment…'),
+            decoration: InputDecoration(
+              hintText: lang == AppLanguage.hindi
+                  ? 'प्रश्न पूछें या टिप्पणी लिखें…'
+                  : 'Ask a question or leave a comment…',
+            ),
             onSubmitted: (_) => _submit(),
           ),
         ),
@@ -1093,7 +1160,7 @@ class _CommentComposerState extends ConsumerState<_CommentComposer> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.send),
-          tooltip: 'Post comment',
+          tooltip: lang == AppLanguage.hindi ? 'टिप्पणी पोस्ट करें' : 'Post comment',
         ),
       ],
     );
@@ -1109,14 +1176,14 @@ class _CommentRow extends ConsumerWidget {
   // No date-formatting dependency in this app yet (see pubspec.yaml) --
   // a short, dependency-free relative label is enough for a comment
   // timestamp; anything past a week falls back to the plain ISO date.
-  String _relativeTime(String iso) {
+  String _relativeTime(String iso, bool isHindi) {
     final parsed = DateTime.tryParse(iso);
     if (parsed == null) return iso;
     final diff = DateTime.now().toUtc().difference(parsed.toUtc());
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 1) return isHindi ? 'अभी' : 'just now';
+    if (diff.inMinutes < 60) return isHindi ? '${diff.inMinutes} मिनट पहले' : '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return isHindi ? '${diff.inHours} घंटे पहले' : '${diff.inHours}h ago';
+    if (diff.inDays < 7) return isHindi ? '${diff.inDays} दिन पहले' : '${diff.inDays}d ago';
     return '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}';
   }
 
@@ -1135,6 +1202,8 @@ class _CommentRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final lang = ref.watch(languageProvider);
+    final isHindi = lang == AppLanguage.hindi;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1157,11 +1226,11 @@ class _CommentRow extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      comment.authorName ?? 'A SchemeMedia user',
+                      comment.authorName ?? (isHindi ? 'स्कीम मीडिया नागरिक' : 'A SchemeMedia user'),
                       style: theme.textTheme.labelLarge,
                     ),
                     Text(
-                      _relativeTime(comment.createdAt) + (comment.edited ? ' · edited' : ''),
+                      _relativeTime(comment.createdAt, isHindi) + (comment.edited ? (isHindi ? ' · संपादित' : ' · edited') : ''),
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
                     ),
                   ],
@@ -1171,7 +1240,7 @@ class _CommentRow extends ConsumerWidget {
                 IconButton(
                   onPressed: () => _delete(context, ref),
                   icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Delete your comment',
+                  tooltip: isHindi ? 'अपनी टिप्पणी हटाएं' : 'Delete your comment',
                   iconSize: AppSpacing.iconMd,
                 ),
             ],

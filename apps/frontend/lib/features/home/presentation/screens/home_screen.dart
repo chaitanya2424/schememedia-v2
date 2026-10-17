@@ -16,16 +16,6 @@ import '../../../recommendations/presentation/providers/recommendations_provider
 import '../../../recommendations/presentation/widgets/recommendation_card.dart';
 
 const _totalAttributes = 27;
-const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const _months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-String _todayLabel() {
-  final now = DateTime.now();
-  return '${_weekdays[now.weekday - 1]}, ${now.day} ${_months[now.month - 1]}';
-}
 
 /// The 11 official categories in the SchemeMedia database, paired with
 /// icons and distinct Gov-Tech color accents for vibrant visual exploration.
@@ -57,6 +47,14 @@ const _quickSearchPrompts = [
   'Health Insurance',
   'Housing PMAY',
   'Pension',
+];
+
+const _hindiQuickSearchPrompts = [
+  'पीएम किसान',
+  'छात्रवृत्ति',
+  'स्वास्थ्य बीमा',
+  'आवास योजना (PMAY)',
+  'पेंशन',
 ];
 
 /// Redesigned Modern & Vibrant Gov-Tech Home Screen.
@@ -209,7 +207,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              for (final prompt in _quickSearchPrompts)
+              for (final prompt in (strings.isHindi ? _hindiQuickSearchPrompts : _quickSearchPrompts))
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: ActionChip(
@@ -327,7 +325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Expanded(
               child: Text(
-                'Picked for you',
+                strings.heroPickedForYou,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
@@ -336,7 +334,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             TextButton(
               onPressed: () => context.go(AppRoutes.recommendations),
-              child: const Text('View all'),
+              child: Text(strings.viewAll),
             ),
           ],
         ),
@@ -421,15 +419,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 /// Upgraded Gov-Tech Hero Banner with Modern Deep Navy / Teal Gradient
-class _HeroCard extends StatelessWidget {
+class _HeroCard extends ConsumerWidget {
   const _HeroCard({required this.recommendations});
 
   final RecommendationResponse? recommendations;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
     final categories = recommendations == null
         ? const <String>[]
         : recommendations!.recommendations
@@ -440,16 +439,30 @@ class _HeroCard extends StatelessWidget {
               .toList();
     final hasMatches = recommendations != null && recommendations!.totalReturned > 0;
 
-    final String eyebrow = hasMatches ? 'Verified Matches Found' : 'Smart Eligibility Matcher';
+    final String eyebrow = hasMatches
+        ? (strings.isHindi ? 'सत्यापित योजनाएं उपलब्ध' : 'Verified Matches Found')
+        : (strings.isHindi ? 'स्मार्ट पात्रता मिलान' : 'Smart Eligibility Matcher');
     final String headline = hasMatches
-        ? '${recommendations!.totalReturned} Scheme Match${recommendations!.totalReturned == 1 ? '' : 'es'} Waiting'
-        : 'Know Which Schemes You Qualify For';
+        ? (strings.isHindi
+            ? '${recommendations!.totalReturned} योजनाएं आपकी पात्रता के अनुकूल हैं'
+            : '${recommendations!.totalReturned} Scheme Match${recommendations!.totalReturned == 1 ? '' : 'es'} Waiting')
+        : (strings.isHindi
+            ? 'जानिए आप किन योजनाओं के लिए पात्र हैं'
+            : 'Know Which Schemes You Qualify For');
     final String body = hasMatches
         ? (categories.isEmpty
-              ? 'Ranked based on your verified demographic profile attributes.'
-              : 'You qualify for welfare assistance across ${categories.join(', ')}.')
-        : "Answer a few quick questions to match 1,000+ central & state welfare programs. Transparent, fast, and 100% private.";
-    final String buttonLabel = hasMatches ? 'See my matches' : 'Check My Eligibility';
+              ? (strings.isHindi
+                  ? 'आपकी जनसांख्यिकीय प्रोफ़ाइल के आधार पर रैंकिंग की गई है।'
+                  : 'Ranked based on your verified demographic profile attributes.')
+              : (strings.isHindi
+                  ? 'आप ${categories.map(strings.categoryName).join(', ')} की योजनाओं के लिए पात्र हैं।'
+                  : 'You qualify for welfare assistance across ${categories.join(', ')}.'))
+        : (strings.isHindi
+            ? '1,000+ केंद्र और राज्य कल्याणकारी योजनाओं से मिलान करने के लिए कुछ प्रश्नों के उत्तर दें। पारदर्शी, तेज़ और पूर्णतः निजी।'
+            : 'Answer a few quick questions to match 1,000+ central & state welfare programs. Transparent, fast, and 100% private.');
+    final String buttonLabel = hasMatches
+        ? (strings.isHindi ? 'मेरी योजनाएं देखें' : 'See my matches')
+        : (strings.isHindi ? 'पात्रता जांचें' : 'Check My Eligibility');
 
     return Container(
       width: double.infinity,
@@ -539,7 +552,7 @@ class _HeroCard extends StatelessWidget {
                 ),
                 onPressed: () => context.go(AppRoutes.assistant),
                 icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                label: const Text('Ask Assistant'),
+                label: Text(strings.isHindi ? 'सहायक से पूछें' : 'Ask Assistant'),
               ),
             ],
           ),
@@ -550,12 +563,13 @@ class _HeroCard extends StatelessWidget {
 }
 
 /// Trust and Impact Metrics Row
-class _TrustMetricRow extends StatelessWidget {
+class _TrustMetricRow extends ConsumerWidget {
   const _TrustMetricRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
@@ -567,11 +581,11 @@ class _TrustMetricRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildItem(context, '1,000+', 'Welfare Schemes', Icons.verified_outlined, colors.brand),
+          _buildItem(context, strings.trustSchemesCount, strings.trustSchemesLabel, Icons.verified_outlined, colors.brand),
           Container(width: 1, height: 32, color: colors.divider),
-          _buildItem(context, '28 States', 'Central & State', Icons.map_outlined, const Color(0xFF0D9488)),
+          _buildItem(context, strings.trustStatesCount, strings.trustStatesLabel, Icons.map_outlined, const Color(0xFF0D9488)),
           Container(width: 1, height: 32, color: colors.divider),
-          _buildItem(context, '100% Free', 'Citizen Direct', Icons.lock_outline, const Color(0xFF2563EB)),
+          _buildItem(context, strings.trustFreeCount, strings.trustFreeLabel, Icons.lock_outline, const Color(0xFF2563EB)),
         ],
       ),
     );
@@ -610,15 +624,16 @@ class _TrustMetricRow extends StatelessWidget {
   }
 }
 
-class _ProfileConfidenceCard extends StatelessWidget {
+class _ProfileConfidenceCard extends ConsumerWidget {
   const _ProfileConfidenceCard({required this.answered});
 
   final int answered;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
     final ratio = answered / _totalAttributes;
     final percent = (ratio * 100).round();
 
@@ -630,7 +645,7 @@ class _ProfileConfidenceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Profile Confidence',
+                  strings.isHindi ? 'प्रोफ़ाइल सटीकता' : 'Profile Confidence',
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -653,8 +668,12 @@ class _ProfileConfidenceCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             answered == 0
-                ? 'Answer questions in your profile to unlock precise eligibility ranking.'
-                : '$answered of $_totalAttributes parameters answered for high accuracy.',
+                ? (strings.isHindi
+                    ? 'सटीक पात्रता रैंकिंग देखने के लिए अपनी प्रोफ़ाइल में प्रश्नों के उत्तर दें।'
+                    : 'Answer questions in your profile to unlock precise eligibility ranking.')
+                : (strings.isHindi
+                    ? 'उच्च सटीकता के लिए $_totalAttributes में से $answered विवरण दिए गए।'
+                    : '$answered of $_totalAttributes parameters answered for high accuracy.'),
             style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -685,11 +704,11 @@ class _ProfileConfidenceCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'DPDP 2023 Compliant',
+                        strings.dpdpTitle,
                         style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       Text(
-                        'Your attributes are encrypted and evaluated deterministically on-device.',
+                        strings.dpdpSubtitle,
                         style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
                       ),
                     ],
@@ -703,7 +722,7 @@ class _ProfileConfidenceCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () => context.go(AppRoutes.recommendations),
-              child: Text(answered == 0 ? 'Start Questionnaire' : 'Review $answered Detail${answered == 1 ? '' : 's'}'),
+              child: Text(answered == 0 ? strings.startQuestionnaire : strings.reviewDetails(answered)),
             ),
           ),
         ],
@@ -712,12 +731,14 @@ class _ProfileConfidenceCard extends StatelessWidget {
   }
 }
 
-class _ShortcutsCard extends StatelessWidget {
+class _ShortcutsCard extends ConsumerWidget {
   const _ShortcutsCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
+
     return AppCard(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Column(
@@ -726,29 +747,29 @@ class _ShortcutsCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
             child: Text(
-              'Quick Shortcuts',
+              strings.quickShortcuts,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           _ShortcutRow(
             icon: Icons.search,
-            label: 'Search for schemes',
+            label: strings.shortcutSearch,
             onTap: () => context.go(AppRoutes.search),
           ),
           _ShortcutRow(
             icon: Icons.auto_awesome_outlined,
-            label: 'See my recommendations',
+            label: strings.shortcutRecommendations,
             onTap: () => context.go(AppRoutes.recommendations),
           ),
           _ShortcutRow(
             icon: Icons.chat_bubble_outline,
-            label: 'Ask the assistant',
+            label: strings.shortcutAssistant,
             onTap: () => context.go(AppRoutes.assistant),
           ),
           _ShortcutRow(
             icon: Icons.bookmark_outline,
-            label: 'View saved schemes',
+            label: strings.shortcutSaved,
             onTap: () => context.go(AppRoutes.saved),
           ),
         ],
@@ -796,16 +817,17 @@ class _ShortcutRow extends StatelessWidget {
   }
 }
 
-class _PickedForYou extends StatelessWidget {
+class _PickedForYou extends ConsumerWidget {
   const _PickedForYou({required this.recommendations});
 
   final RecommendationResponse? recommendations;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (recommendations == null || recommendations!.recommendations.isEmpty) {
       final theme = Theme.of(context);
       final colors = context.colors;
+      final strings = ref.watch(stringsProvider);
 
       return AppCard(
         child: Column(
@@ -816,14 +838,16 @@ class _PickedForYou extends StatelessWidget {
                 Icon(Icons.explore_outlined, color: colors.brand),
                 const SizedBox(width: 8),
                 Text(
-                  'No personalized recommendations yet',
+                  strings.isHindi ? 'अभी कोई व्यक्तिगत अनुशंसा नहीं है' : 'No personalized recommendations yet',
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Complete your profile questionnaire in "For You" to see schemes matched to your occupation, income, and state.',
+              strings.isHindi
+                  ? 'अपने व्यवसाय, आय और राज्य के अनुकूल योजनाएं देखने के लिए "आपके लिए" में अपनी प्रोफ़ाइल पूरी करें।'
+                  : 'Complete your profile questionnaire in "For You" to see schemes matched to your occupation, income, and state.',
               style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -834,7 +858,7 @@ class _PickedForYou extends StatelessWidget {
               ),
               onPressed: () => context.go(AppRoutes.recommendations),
               icon: const Icon(Icons.tune, size: 16),
-              label: const Text('Complete My Profile'),
+              label: Text(strings.isHindi ? 'अपनी प्रोफ़ाइल पूरी करें' : 'Complete My Profile'),
             ),
           ],
         ),

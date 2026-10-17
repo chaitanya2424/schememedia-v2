@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/local/language_repository.dart';
 import '../../../../core/local/saved_schemes_repository.dart';
 import '../../../../core/local/theme_mode_repository.dart';
 import '../../../../core/localization/app_strings.dart';
@@ -10,6 +9,7 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../auth/domain/auth_models.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
 import '../providers/profile_providers.dart';
@@ -30,6 +30,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
     final savedCount = ref.watch(savedSchemesProvider).length;
     final themeMode = ref.watch(themeModeProvider);
     final authState = ref.watch(authControllerProvider).valueOrNull;
@@ -37,7 +38,15 @@ class ProfileScreen extends ConsumerWidget {
     final user = authState?.user;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: Text(strings.profileTitle),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: LanguageToggleButton(),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -51,12 +60,12 @@ class ProfileScreen extends ConsumerWidget {
               ),
               if (isSignedIn) ...[
                 const SizedBox(height: AppSpacing.lg),
-                Text('Your eligibility profile', style: theme.textTheme.titleMedium),
+                Text(strings.yourEligibilityProfile, style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.sm),
                 const AppCard(child: _ProfileCompletionCard()),
               ],
               const SizedBox(height: AppSpacing.lg),
-              Text('On this device', style: theme.textTheme.titleMedium),
+              Text(strings.onThisDevice, style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -64,10 +73,14 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     _Row(
                       icon: Icons.bookmark_outline,
-                      title: 'Saved schemes',
+                      title: strings.savedSchemes,
                       subtitle: isSignedIn
-                          ? '$savedCount saved, synced to your account'
-                          : '$savedCount saved on this device',
+                          ? (strings.isHindi
+                              ? '$savedCount सहेजे गए, आपके खाते से सिंक किए गए'
+                              : '$savedCount saved, synced to your account')
+                          : (strings.isHindi
+                              ? '$savedCount इस डिवाइस पर सहेजे गए'
+                              : '$savedCount saved on this device'),
                       onTap: () => context.go(AppRoutes.saved),
                     ),
                     const Divider(height: 1),
@@ -76,7 +89,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('Preferences', style: theme.textTheme.titleMedium),
+              Text(strings.preferences, style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
               AppCard(
                 padding: EdgeInsets.zero,
@@ -84,8 +97,10 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     _InertRow(
                       icon: Icons.notifications_outlined,
-                      title: 'Updates about new schemes',
-                      subtitle: 'No delivery channel (email/push) exists yet',
+                      title: strings.updatesAboutNewSchemes,
+                      subtitle: strings.isHindi
+                          ? 'कोई सूचना चैनल (ईमेल/पुश) अभी सक्रिय नहीं है'
+                          : 'No delivery channel (email/push) exists yet',
                     ),
                     const Divider(height: 1),
                     const _LanguageRow(),
@@ -93,7 +108,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('About', style: theme.textTheme.titleMedium),
+              Text(strings.aboutApp, style: theme.textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
               AppCard(
                 child: Row(
@@ -112,13 +127,15 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _SignedOutHeader extends StatelessWidget {
+class _SignedOutHeader extends ConsumerWidget {
   const _SignedOutHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -134,9 +151,9 @@ class _SignedOutHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Not signed in', style: theme.textTheme.titleMedium),
+                  Text(strings.notSignedIn, style: theme.textTheme.titleMedium),
                   Text(
-                    'Sign in to sync your profile and saved schemes across devices.',
+                    strings.signInSubtitle,
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -151,7 +168,7 @@ class _SignedOutHeader extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: () => context.push(AppRoutes.login),
                 icon: const Icon(Icons.login_rounded),
-                label: const Text('Sign in / Create Account'),
+                label: Text(strings.signInOrCreate),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF1E3A8A),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -212,7 +229,7 @@ class _SignedInHeader extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () => ref.read(authControllerProvider.notifier).logout(),
                 icon: const Icon(Icons.logout, size: AppSpacing.iconSm),
-                label: const Text('Sign out'),
+                label: Text(ref.watch(stringsProvider).signOut),
               ),
             ),
           ],
@@ -232,6 +249,7 @@ class _ProfileCompletionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
     final profileAsync = ref.watch(myProfileProvider);
 
     return profileAsync.when(
@@ -242,7 +260,9 @@ class _ProfileCompletionCard extends ConsumerWidget {
       error: (_, _) => Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Text(
-          "Couldn't load your profile right now.",
+          strings.isHindi
+              ? 'आपकी प्रोफ़ाइल अभी लोड नहीं हो सकी।'
+              : "Couldn't load your profile right now.",
           style: theme.textTheme.bodySmall,
         ),
       ),
@@ -259,11 +279,18 @@ class _ProfileCompletionCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$answered of $total answered', style: theme.textTheme.bodyMedium),
+                    Text(
+                      strings.isHindi ? '$total में से $answered उत्तर दिए गए' : '$answered of $total answered',
+                      style: theme.textTheme.bodyMedium,
+                    ),
                     Text(
                       answered == 0
-                          ? 'Answer questions in For You to build your profile.'
-                          : 'Used to personalize your recommendations.',
+                          ? (strings.isHindi
+                              ? 'अपनी प्रोफ़ाइल बनाने के लिए "आपके लिए" में प्रश्नों के उत्तर दें।'
+                              : 'Answer questions in For You to build your profile.')
+                          : (strings.isHindi
+                              ? 'आपकी सिफारिशों को सटीक बनाने के लिए उपयोग किया जाता है।'
+                              : 'Used to personalize your recommendations.'),
                       style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                     ),
                   ],
@@ -271,7 +298,7 @@ class _ProfileCompletionCard extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => context.go(AppRoutes.recommendations),
-                child: Text(answered == 0 ? 'Start' : 'Update'),
+                child: Text(answered == 0 ? strings.startProfile : strings.updateProfile),
               ),
             ],
           ),
@@ -336,7 +363,12 @@ class _ThemeRow extends ConsumerWidget {
         children: [
           Icon(Icons.dark_mode_outlined, color: colors.brand),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text('Appearance', style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(
+            child: Text(
+              ref.watch(stringsProvider).appearanceLabel,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
           SegmentedButton<ThemeMode>(
             segments: const [
               ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto, size: AppSpacing.iconSm)),

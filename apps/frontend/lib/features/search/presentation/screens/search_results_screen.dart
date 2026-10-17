@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/async_value_view.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
 import '../../domain/scheme_summary.dart';
@@ -38,6 +40,15 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     'Ayushman Bharat',
     'Mudra Loan',
     'Women SHG',
+  ];
+
+  static const _hindiPopularQueries = [
+    'किसान सब्सिडी',
+    'छात्रवृत्ति',
+    'आवास योजना (PMAY)',
+    'आयुष्मान भारत',
+    'मुद्रा लोन',
+    'महिला स्वयं सहायता समूह',
   ];
 
   @override
@@ -80,6 +91,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     final state = ref.watch(searchNotifierProvider);
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
+    final popularQueries = strings.isHindi ? _hindiPopularQueries : _popularQueries;
 
     return Scaffold(
       appBar: AppBar(
@@ -94,9 +107,15 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
               child: const Icon(Icons.account_balance, color: Color(0xFF1E3A8A), size: 20),
             ),
             const SizedBox(width: AppSpacing.sm),
-            const Text('Explore Welfare Schemes', style: TextStyle(fontWeight: FontWeight.w700)),
+            Text(strings.exploreTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
           ],
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: LanguageToggleButton(),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -105,10 +124,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const EyebrowLabel('PUBLIC SCHEMES DIRECTORY'),
+                EyebrowLabel(strings.publicSchemesDirectory),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Find schemes by need, not ministry.',
+                  strings.searchByNeed,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
@@ -116,7 +135,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Search through central and state benefits, cash subsidies, and educational grants.',
+                  strings.searchDescription,
                   style: theme.textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -138,7 +157,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     controller: _controller,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Search schemes, benefits, or documents...',
+                      hintText: strings.searchSchemesHint,
                       hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
                       prefixIcon: Icon(Icons.search, color: colors.brand),
                       suffixIcon: Row(
@@ -147,7 +166,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           if (_controller.text.isNotEmpty)
                             IconButton(
                               icon: const Icon(Icons.close, size: 18),
-                              tooltip: 'Clear',
+                              tooltip: strings.clear,
                               onPressed: () {
                                 _controller.clear();
                                 setState(() {});
@@ -164,7 +183,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                               Icons.tune_rounded,
                               color: _sortAlphabetically ? colors.brand : colors.textSecondary,
                             ),
-                            tooltip: 'Sort & Filters',
+                            tooltip: strings.sortAndFilters,
                             onPressed: _openFilters,
                           ),
                         ],
@@ -182,14 +201,14 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                   child: Row(
                     children: [
                       Text(
-                        'Suggestions:',
+                        strings.searchSuggestions,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      for (final tag in _popularQueries)
+                      for (final tag in popularQueries)
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: InkWell(
@@ -226,8 +245,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     alignment: Alignment.center,
                     child: EmptyState(
                       icon: Icons.search_off_rounded,
-                      title: 'No schemes matched "${_controller.text}"',
-                      subtitle: 'Try a broader keyword, or explore popular categories below.',
+                      title: strings.noSchemesMatched(_controller.text),
+                      subtitle: strings.tryDifferentKeywords,
                     ),
                   ),
                   loadingBuilder: (context) => const _SearchSkeleton(),
@@ -252,23 +271,24 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   }
 }
 
-class _InitialExplorePrompt extends StatelessWidget {
+class _InitialExplorePrompt extends ConsumerWidget {
   const _InitialExplorePrompt({required this.onSuggestionSelected});
 
   final ValueChanged<String> onSuggestionSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
 
     final categories = [
-      (label: 'Agriculture & Farming', icon: Icons.grass_rounded, color: const Color(0xFF059669)),
-      (label: 'Education & Grants', icon: Icons.school_rounded, color: const Color(0xFF2563EB)),
-      (label: 'Healthcare Subsidies', icon: Icons.favorite_rounded, color: const Color(0xFFE11D48)),
-      (label: 'Housing & Urban Welfare', icon: Icons.home_rounded, color: const Color(0xFFD97706)),
-      (label: 'Women & Child Welfare', icon: Icons.family_restroom_rounded, color: const Color(0xFF7C3AED)),
-      (label: 'Business & Loans', icon: Icons.account_balance_rounded, color: const Color(0xFF16A34A)),
+      (label: strings.isHindi ? 'कृषि एवं ग्रामीण' : 'Agriculture & Farming', query: strings.isHindi ? 'कृषि' : 'Agriculture', icon: Icons.grass_rounded, color: const Color(0xFF059669)),
+      (label: strings.isHindi ? 'शिक्षा एवं कौशल' : 'Education & Grants', query: strings.isHindi ? 'शिक्षा' : 'Education', icon: Icons.school_rounded, color: const Color(0xFF2563EB)),
+      (label: strings.isHindi ? 'स्वास्थ्य एवं चिकित्सा' : 'Healthcare Subsidies', query: strings.isHindi ? 'स्वास्थ्य' : 'Health', icon: Icons.favorite_rounded, color: const Color(0xFFE11D48)),
+      (label: strings.isHindi ? 'आवास एवं आश्रय' : 'Housing & Urban Welfare', query: strings.isHindi ? 'आवास' : 'Housing', icon: Icons.home_rounded, color: const Color(0xFFD97706)),
+      (label: strings.isHindi ? 'महिला एवं बाल विकास' : 'Women & Child Welfare', query: strings.isHindi ? 'महिला' : 'Women', icon: Icons.family_restroom_rounded, color: const Color(0xFF7C3AED)),
+      (label: strings.isHindi ? 'व्यवसाय एवं ऋण' : 'Business & Loans', query: strings.isHindi ? 'व्यवसाय' : 'Business', icon: Icons.account_balance_rounded, color: const Color(0xFF16A34A)),
     ];
 
     return Container(
@@ -286,7 +306,7 @@ class _InitialExplorePrompt extends StatelessWidget {
               const Icon(Icons.lightbulb_outline, size: 20, color: Color(0xFF1E3A8A)),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Popular Welfare Domains',
+                strings.popularWelfareDomains,
                 style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
@@ -305,7 +325,7 @@ class _InitialExplorePrompt extends StatelessWidget {
             itemBuilder: (context, index) {
               final cat = categories[index];
               return InkWell(
-                onTap: () => onSuggestionSelected(cat.label.split(' ').first),
+                onTap: () => onSuggestionSelected(cat.query),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -341,14 +361,16 @@ class _InitialExplorePrompt extends StatelessWidget {
   }
 }
 
-class _FilterSheet extends StatelessWidget {
+class _FilterSheet extends ConsumerWidget {
   const _FilterSheet({required this.sortAlphabetically});
 
   final bool sortAlphabetically;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xl),
       child: Column(
@@ -359,23 +381,23 @@ class _FilterSheet extends StatelessWidget {
             children: [
               const Icon(Icons.sort_rounded, size: 20, color: Color(0xFF1E3A8A)),
               const SizedBox(width: AppSpacing.sm),
-              Text('Sort schemes', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Text(strings.sortSchemes, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           ListTile(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
             leading: const Icon(Icons.auto_awesome_outlined),
-            title: const Text('Relevance match (Recommended)', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Ranks schemes by AI semantic match to your query'),
+            title: Text(strings.relevanceMatch, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(strings.relevanceSubtitle),
             trailing: sortAlphabetically ? null : const Icon(Icons.check_circle_rounded, color: Color(0xFF1E3A8A)),
             onTap: () => Navigator.of(context).pop(false),
           ),
           ListTile(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
             leading: const Icon(Icons.sort_by_alpha_rounded),
-            title: const Text('Name, A to Z', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Alphabetical order by official scheme title'),
+            title: Text(strings.nameAtoZ, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text(strings.nameAtoZSubtitle),
             trailing: sortAlphabetically ? const Icon(Icons.check_circle_rounded, color: Color(0xFF1E3A8A)) : null,
             onTap: () => Navigator.of(context).pop(true),
           ),
@@ -394,7 +416,7 @@ class _SearchSkeleton extends StatelessWidget {
   }
 }
 
-class _ResultsSection extends StatelessWidget {
+class _ResultsSection extends ConsumerWidget {
   const _ResultsSection({
     required this.response,
     required this.categoryFilter,
@@ -408,9 +430,10 @@ class _ResultsSection extends StatelessWidget {
   final bool sortAlphabetically;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
 
     // Collect category counts
     final categoryCounts = <String, int>{};
@@ -439,7 +462,9 @@ class _ResultsSection extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 _CategoryChip(
-                  label: 'All (${response.results.length})',
+                  label: strings.isHindi
+                      ? 'सभी (${response.results.length})'
+                      : 'All (${response.results.length})',
                   selected: categoryFilter == null,
                   onTap: () => onCategorySelected(null),
                 ),
@@ -447,7 +472,9 @@ class _ResultsSection extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: AppSpacing.sm),
                     child: _CategoryChip(
-                      label: '$c (${categoryCounts[c]})',
+                      label: strings.isHindi
+                          ? '${strings.categoryName(c)} (${categoryCounts[c]})'
+                          : '$c (${categoryCounts[c]})',
                       selected: categoryFilter == c,
                       onTap: () => onCategorySelected(c),
                     ),
@@ -467,7 +494,7 @@ class _ResultsSection extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                '${results.length} scheme${results.length == 1 ? '' : 's'} found',
+                strings.schemesFound(results.length),
                 style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
@@ -558,14 +585,15 @@ class _ResultsList extends StatelessWidget {
   }
 }
 
-class _VerificationBreakdownBadges extends StatelessWidget {
+class _VerificationBreakdownBadges extends ConsumerWidget {
   const _VerificationBreakdownBadges(this.response);
 
   final SearchResponse response;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
     final verifiedCount = response.verificationBreakdown['officially_verified'] ?? 0;
 
     if (verifiedCount == 0) return const SizedBox.shrink();
@@ -576,7 +604,7 @@ class _VerificationBreakdownBadges extends StatelessWidget {
         const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF15803D)),
         const SizedBox(width: 4),
         Text(
-          '$verifiedCount Verified',
+          strings.verifiedCount(verifiedCount),
           style: theme.textTheme.labelSmall?.copyWith(
             color: const Color(0xFF15803D),
             fontWeight: FontWeight.w600,

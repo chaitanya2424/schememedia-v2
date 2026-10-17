@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/enums.dart';
+import '../localization/app_strings.dart';
 import '../theme/status_colors.dart';
 import 'status_pill.dart';
 
-/// Renders `eligibility_state` consistently everywhere it appears
-/// (recommendations, assistant evidence). `fail` is intentionally muted,
-/// not hidden or alarming -- recommendations only ever demotes a `fail`
-/// result, never removes it, and the badge should read that way.
-class EligibilityStateBadge extends StatelessWidget {
+/// Renders `eligibility_state` consistently everywhere it appears.
+/// Supports both English and Hindi with verified localized terminology.
+class EligibilityStateBadge extends ConsumerWidget {
   const EligibilityStateBadge({super.key, required this.state});
 
   final EligibilityState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final strings = ref.watch(stringsProvider);
+
     return StatusPill(
       color: StatusColors.eligibility(state, scheme),
-      label: _label(state),
+      label: _label(state, strings),
       icon: _icon(state),
     );
   }
@@ -31,14 +33,11 @@ class EligibilityStateBadge extends StatelessWidget {
     EligibilityState.unrecognized => Icons.help_outline,
   };
 
-  String _label(EligibilityState state) => switch (state) {
-    // "Likely eligible", not a bare "Eligible" -- redesign-v2 wording
-    // (from the reference mockups), and more honest: this is a rule-based
-    // match against a possibly-incomplete profile, never a guarantee.
-    EligibilityState.pass => 'Likely eligible',
-    EligibilityState.fail => 'Not eligible',
-    EligibilityState.unknown => 'Unknown',
-    EligibilityState.notApplicable => 'Not applicable',
-    EligibilityState.unrecognized => 'Unknown',
+  String _label(EligibilityState state, AppStrings strings) => switch (state) {
+    EligibilityState.pass => strings.likelyEligible,
+    EligibilityState.fail => strings.notEligible,
+    EligibilityState.unknown => strings.unknownEligibility,
+    EligibilityState.notApplicable => strings.isHindi ? 'लागू नहीं' : 'Not applicable',
+    EligibilityState.unrecognized => strings.unknownEligibility,
   };
 }

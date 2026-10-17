@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/enums.dart';
 import '../local/saved_schemes_repository.dart';
+import '../localization/app_strings.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'app_card.dart';
@@ -91,9 +92,29 @@ class SchemeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
     final isSaved = ref.watch(savedSchemesProvider.select((s) => s.containsKey(schemeId)));
 
-    final metaParts = [if (category != null) category!, if (metaSuffix != null) metaSuffix!];
+    final translatedCategory = category != null ? strings.categoryName(category!) : null;
+    final effectiveMetaSuffix = metaSuffix == null
+        ? null
+        : (metaSuffix == 'Central'
+            ? strings.centralGov
+            : (metaSuffix == 'State' ? strings.stateGov : metaSuffix));
+    final metaParts = [
+      if (translatedCategory != null) translatedCategory,
+      if (effectiveMetaSuffix != null) effectiveMetaSuffix,
+    ];
+
+    final effectiveCta = switch (ctaLabel) {
+      'View details' => strings.viewDetails,
+      'See eligibility' => strings.seeEligibility,
+      'Check eligibility' => strings.checkEligibility,
+      _ => ctaLabel,
+    };
+    final effectiveSecondary = secondaryLabel == null
+        ? null
+        : (secondaryLabel == 'Details' ? strings.viewDetails : secondaryLabel);
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -178,14 +199,15 @@ class SchemeCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          if (onSecondaryTap != null && secondaryLabel != null)
+
+          if (onSecondaryTap != null && effectiveSecondary != null)
             Row(
               children: [
                 Expanded(
                   child: FilledButton.icon(
                     onPressed: onTap,
                     icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
-                    label: Text(ctaLabel),
+                    label: Text(effectiveCta),
                     style: FilledButton.styleFrom(
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -199,7 +221,7 @@ class SchemeCard extends ConsumerWidget {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Text(secondaryLabel!),
+                    child: Text(effectiveSecondary),
                   ),
                 ),
               ],
@@ -210,7 +232,7 @@ class SchemeCard extends ConsumerWidget {
               child: FilledButton.icon(
                 onPressed: onTap,
                 icon: const Icon(Icons.arrow_forward, size: AppSpacing.iconSm),
-                label: Text(ctaLabel),
+                label: Text(effectiveCta),
                 style: FilledButton.styleFrom(
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -282,18 +304,19 @@ class _CategoryIcon extends StatelessWidget {
   }
 }
 
-class _SaveButton extends StatelessWidget {
+class _SaveButton extends ConsumerWidget {
   const _SaveButton({required this.saved, required this.onTap});
 
   final bool saved;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
     return IconButton(
       onPressed: onTap,
-      tooltip: saved ? 'Remove from saved' : 'Save for later',
+      tooltip: saved ? strings.removeFromSaved : strings.saveForLater,
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: Icon(

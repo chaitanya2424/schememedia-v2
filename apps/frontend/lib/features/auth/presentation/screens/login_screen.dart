@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../providers/auth_controller.dart';
 
@@ -129,6 +131,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ],
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: LanguageToggleButton(),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -158,7 +166,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Icon(Icons.shield_outlined, size: 14, color: colors.brand),
                           const SizedBox(width: 6),
                           Text(
-                            'National Citizen Portal Auth',
+                            ref.watch(languageProvider) == AppLanguage.hindi
+                                ? 'राष्ट्रीय नागरिक पोर्टल प्रमाणीकरण'
+                                : 'National Citizen Portal Auth',
                             style: TextStyle(
                               color: colors.brand,
                               fontWeight: FontWeight.w700,
@@ -170,10 +180,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  EyebrowLabel(isSignIn ? 'Welcome back' : 'Get started'),
+                  EyebrowLabel(
+                    isSignIn
+                        ? (ref.watch(languageProvider) == AppLanguage.hindi ? 'पुनः स्वागत है' : 'Welcome back')
+                        : (ref.watch(languageProvider) == AppLanguage.hindi ? 'शुरू करें' : 'Get started'),
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    isSignIn ? 'Pick up where you left off.' : 'Create your account.',
+                    isSignIn
+                        ? (ref.watch(languageProvider) == AppLanguage.hindi
+                            ? 'जहां छोड़ा था, वहीं से शुरू करें।'
+                            : 'Pick up where you left off.')
+                        : (ref.watch(languageProvider) == AppLanguage.hindi
+                            ? 'अपना खाता बनाएं।'
+                            : 'Create your account.'),
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
@@ -182,8 +202,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     isSignIn
-                        ? 'Sign in to keep your profile, saved schemes and recommendations together.'
-                        : 'One account keeps your profile, saved schemes and recommendations in sync.',
+                        ? (ref.watch(languageProvider) == AppLanguage.hindi
+                            ? 'अपनी प्रोफ़ाइल, सहेजी गई योजनाएं और सिफारिशें एक साथ रखने के लिए साइन इन करें।'
+                            : 'Sign in to keep your profile, saved schemes and recommendations together.')
+                        : (ref.watch(languageProvider) == AppLanguage.hindi
+                            ? 'एक खाता आपकी प्रोफ़ाइल, सहेजी गई योजनाएं और सिफारिशें सुरक्षित रखता है।'
+                            : 'One account keeps your profile, saved schemes and recommendations in sync.'),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -222,7 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     : null,
                               ),
                               child: Text(
-                                'Sign In',
+                                ref.watch(languageProvider) == AppLanguage.hindi ? 'साइन इन' : 'Sign In',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontWeight: isSignIn ? FontWeight.w800 : FontWeight.w600,
@@ -254,7 +278,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     : null,
                               ),
                               child: Text(
-                                'Create Account',
+                                ref.watch(languageProvider) == AppLanguage.hindi ? 'खाता बनाएं' : 'Create Account',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontWeight: !isSignIn ? FontWeight.w800 : FontWeight.w600,
@@ -428,7 +452,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Private & DPDP Act 2023 Compliant',
+                                ref.watch(languageProvider) == AppLanguage.hindi
+                                    ? 'गोपनीय व DPDP अधिनियम 2023 के अनुरूप'
+                                    : 'Private & DPDP Act 2023 Compliant',
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF15803D),
@@ -436,7 +462,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Your saved schemes and answers are stored securely and never shared with third parties.',
+                                ref.watch(languageProvider) == AppLanguage.hindi
+                                    ? 'आपकी सहेजी गई योजनाएं और उत्तर सुरक्षित रखे जाते हैं और किसी भी तीसरे पक्ष के साथ साझा नहीं किए जाते हैं।'
+                                    : 'Your saved schemes and answers are stored securely and never shared with third parties.',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: const Color(0xFF166534),
                                   height: 1.3,

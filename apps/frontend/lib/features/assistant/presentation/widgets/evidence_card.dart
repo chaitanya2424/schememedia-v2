@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../core/localization/app_strings.dart';
 
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -53,7 +56,7 @@ class _EvidenceCardState extends State<EvidenceCard> {
   }
 }
 
-class _DetailsSection extends StatelessWidget {
+class _DetailsSection extends ConsumerWidget {
   const _DetailsSection({required this.evidence, required this.expanded, required this.onToggle});
 
   final EvidenceResult evidence;
@@ -61,15 +64,17 @@ class _DetailsSection extends StatelessWidget {
   final VoidCallback onToggle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextButton.icon(
           onPressed: onToggle,
           icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
-          label: Text(expanded ? 'Hide details' : 'Why this scheme?'),
+          label: Text(expanded ? strings.hideDetails : strings.whyThisScheme),
         ),
         if (expanded) ...[
           const Divider(height: 1),
@@ -79,7 +84,9 @@ class _DetailsSection extends StatelessWidget {
           if (evidence.missingAttributes.isNotEmpty)
             _Bullet(
               icon: Icons.help_outline,
-              text: 'Still unknown: ${evidence.missingAttributes.join(', ')}',
+              text: strings.isHindi
+                  ? 'अस्पष्ट विवरण: ${evidence.missingAttributes.join(', ')}'
+                  : 'Still unknown: ${evidence.missingAttributes.join(', ')}',
               color: StatusColors.warning(theme.colorScheme),
             ),
         ],

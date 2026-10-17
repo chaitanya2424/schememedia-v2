@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/async_value_view.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
 import '../../domain/recommendation.dart';
@@ -27,9 +29,18 @@ class RecommendationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(recommendationsNotifierProvider);
+    final strings = ref.watch(stringsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('For You')),
+      appBar: AppBar(
+        title: Text(strings.navForYou),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: LanguageToggleButton(),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: AsyncValueView<RecommendationResponse?>(
           value: state,
@@ -84,23 +95,32 @@ class _ResultsView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Expanded(child: EyebrowLabel('Personal recommendations')),
+            Expanded(
+              child: EyebrowLabel(strings.isHindi ? 'व्यक्तिगत सिफारिशें' : 'Personal recommendations'),
+            ),
             TextButton(
               onPressed: () => ref.read(recommendationsNotifierProvider.notifier).reset(),
-              child: const Text('Edit answers'),
+              child: Text(strings.isHindi ? 'उत्तर बदलें' : 'Edit answers'),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text('Made for your next step.', style: theme.textTheme.headlineSmall),
+        Text(
+          strings.isHindi ? 'आपकी जरूरतों के अनुसार चयनित।' : 'Made for your next step.',
+          style: theme.textTheme.headlineSmall,
+        ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          "A considered shortlist from what you've told us. Nothing here is a promise of approval.",
+          strings.isHindi
+              ? 'आपकी जानकारी के आधार पर तैयार सूची। यह स्वीकृति का वादा नहीं है।'
+              : "A considered shortlist from what you've told us. Nothing here is a promise of approval.",
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -109,13 +129,23 @@ class _ResultsView extends ConsumerWidget {
         else
           _InfoBanner(
             icon: Icons.info_outline,
-            text: 'Add some profile details to see personalized eligibility instead of "unknown".',
+            text: strings.isHindi
+                ? 'सटीक व्यक्तिगत पात्रता देखने के लिए प्रोफ़ाइल विवरण जोड़ें।'
+                : 'Add some profile details to see personalized eligibility instead of "unknown".',
           ),
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
-            Expanded(child: Text('Top matches', style: theme.textTheme.titleMedium)),
-            Text('Updated just now', style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+            Expanded(
+              child: Text(
+                strings.isHindi ? 'सर्वश्रेष्ठ मिलान' : 'Top matches',
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+            Text(
+              strings.isHindi ? 'अभी अपडेट हुआ' : 'Updated just now',
+              style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -131,14 +161,15 @@ class _ResultsView extends ConsumerWidget {
 
 /// "Why these matches?" -- real, templated from what the profile actually
 /// carried, not the mockup's literal hand-written sentence.
-class _WhyTheseMatchesBanner extends StatelessWidget {
+class _WhyTheseMatchesBanner extends ConsumerWidget {
   const _WhyTheseMatchesBanner({required this.response});
 
   final RecommendationResponse response;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
     final passLabels = response.recommendations
         .expand((r) => r.eligibilityRules)
         .where((r) => r.state.name == 'pass')
@@ -146,9 +177,13 @@ class _WhyTheseMatchesBanner extends StatelessWidget {
         .toSet()
         .take(3)
         .toList();
-    final body = passLabels.isEmpty
-        ? 'Your answers shaped how these results are ranked.'
-        : '${passLabels.join(', ')} shaped this list.';
+    final body = strings.isHindi
+        ? (passLabels.isEmpty
+            ? 'आपके उत्तरों के आधार पर यह सूची तैयार की गई है।'
+            : '${passLabels.join(', ')} के आधार पर यह सूची तैयार हुई।')
+        : (passLabels.isEmpty
+            ? 'Your answers shaped how these results are ranked.'
+            : '${passLabels.join(', ')} shaped this list.');
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -174,7 +209,7 @@ class _WhyTheseMatchesBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Why these matches?',
+                  strings.isHindi ? 'यह योजनाएं क्यों?' : 'Why these matches?',
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF065F46),

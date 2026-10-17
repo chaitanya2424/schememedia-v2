@@ -284,7 +284,7 @@ class _EmptyState extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Answers are grounded in sources',
+                        strings.answersGrounded,
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1E3A8A),
@@ -292,7 +292,7 @@ class _EmptyState extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'We show you where the information comes from so you can check it yourself.',
+                        strings.answersGroundedSubtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF1E40AF),
                           height: 1.4,
@@ -381,7 +381,7 @@ class _TypingIndicator extends StatelessWidget {
   }
 }
 
-class _InputBar extends StatelessWidget {
+class _InputBar extends ConsumerWidget {
   const _InputBar({required this.controller, required this.enabled, required this.onSend});
 
   final TextEditingController controller;
@@ -389,8 +389,10 @@ class _InputBar extends StatelessWidget {
   final VoidCallback onSend;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -415,11 +417,11 @@ class _InputBar extends StatelessWidget {
                 maxLines: 5,
                 maxLength: _maxMessageLength,
                 textInputAction: TextInputAction.send,
-                decoration: const InputDecoration(
-                  hintText: 'Ask about a scheme, benefit, or eligibility…',
+                decoration: InputDecoration(
+                  hintText: strings.assistantInputHint,
                   counterText: '',
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                 ),
                 onSubmitted: (_) => onSend(),
               ),
@@ -428,7 +430,7 @@ class _InputBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           IconButton.filled(
             key: const ValueKey('assistant_send_button'),
-            tooltip: enabled ? 'Send message' : 'Sending…',
+            tooltip: enabled ? strings.sendMessageTooltip : strings.sendingTooltip,
             onPressed: enabled ? onSend : null,
             style: IconButton.styleFrom(
               backgroundColor: const Color(0xFF1E3A8A),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../domain/assistant_message.dart';
@@ -50,22 +52,23 @@ class _UserBubble extends StatelessWidget {
   }
 }
 
-class _AssistantBubble extends StatefulWidget {
+class _AssistantBubble extends ConsumerStatefulWidget {
   const _AssistantBubble({required this.turn});
 
   final AssistantTurn turn;
 
   @override
-  State<_AssistantBubble> createState() => _AssistantBubbleState();
+  ConsumerState<_AssistantBubble> createState() => _AssistantBubbleState();
 }
 
-class _AssistantBubbleState extends State<_AssistantBubble> {
+class _AssistantBubbleState extends ConsumerState<_AssistantBubble> {
   bool _sourcesExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final strings = ref.watch(stringsProvider);
     final turn = widget.turn;
     final hasWarnings = turn.groundingWarnings.isNotEmpty;
     final hasEvidence = turn.evidence.results.isNotEmpty;
@@ -99,15 +102,19 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
                   icon: Icon(_sourcesExpanded ? Icons.expand_less : Icons.expand_more),
                   label: Text(
                     _sourcesExpanded
-                        ? 'Hide sources'
-                        : 'Sources (${turn.evidence.results.length})',
+                        ? strings.hideSources
+                        : strings.sourcesWithCount(turn.evidence.results.length),
                   ),
                 ),
                 if (_sourcesExpanded) ...[
                   Text(
                     turn.evidence.profileProvided
-                        ? 'Based on what you told me, searched for "${turn.evidence.query}".'
-                        : 'Searched for "${turn.evidence.query}" -- no profile details yet, so eligibility below is mostly unknown.',
+                        ? (strings.isHindi
+                            ? 'आपकी जानकारी के आधार पर "${turn.evidence.query}" के लिए खोज की गई।'
+                            : 'Based on what you told me, searched for "${turn.evidence.query}".')
+                        : (strings.isHindi
+                            ? '"${turn.evidence.query}" के लिए खोज की गई -- प्रोफ़ाइल विवरण के बिना अधिकांश पात्रता अस्पष्ट है।'
+                            : 'Searched for "${turn.evidence.query}" -- no profile details yet, so eligibility below is mostly unknown.'),
                     style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -126,14 +133,15 @@ class _AssistantBubbleState extends State<_AssistantBubble> {
   }
 }
 
-class _GroundingWarningBanner extends StatelessWidget {
+class _GroundingWarningBanner extends ConsumerWidget {
   const _GroundingWarningBanner({required this.warnings});
 
   final List<String> warnings;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
     final color = StatusColors.warning(theme.colorScheme);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
@@ -152,7 +160,7 @@ class _GroundingWarningBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'This reply may not be fully accurate:',
+                  strings.replyAccuracyWarning,
                   style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 for (final warning in warnings)

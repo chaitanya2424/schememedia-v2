@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/local/saved_schemes_repository.dart';
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/scheme_card.dart';
 
@@ -33,6 +35,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
   @override
   Widget build(BuildContext context) {
     final saved = ref.watch(savedSchemesProvider).values.toList();
+    final strings = ref.watch(stringsProvider);
     final categories = saved.map((s) => s.category).whereType<String>().toSet().toList()..sort();
 
     final filtered = _selectedCategory == null
@@ -41,7 +44,16 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saved Schemes', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(
+          strings.isHindi ? 'सहेजी गई योजनाएं' : 'Saved Schemes',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: AppSpacing.md),
+            child: LanguageToggleButton(),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -50,28 +62,37 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const EyebrowLabel('SAVED SHORTLIST'),
-                const SizedBox(height: AppSpacing.xs),
-                Text('Saved for later.', style: Theme.of(context).textTheme.headlineSmall),
+                EyebrowLabel(strings.isHindi ? 'सहेजी गई सूची' : 'SAVED SHORTLIST'),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Keep a quiet shortlist while you gather documents or talk it through.',
+                  strings.isHindi ? 'भविष्य के लिए सहेजी गई योजनाएं' : 'Saved for later.',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  strings.isHindi
+                      ? 'दस्तावेज एकत्र करते समय अपनी पसंदीदा योजनाओं की सूची यहां रखें।'
+                      : 'Keep a quiet shortlist while you gather documents or talk it through.',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 if (saved.isEmpty)
                   Column(
                     children: [
-                      const EmptyState(
+                      EmptyState(
                         icon: Icons.bookmark_outline_rounded,
-                        title: "You haven't saved any schemes yet.",
-                        subtitle: 'Tap the bookmark on any scheme to keep it here.',
+                        title: strings.isHindi
+                            ? 'आपने अभी तक कोई योजना नहीं सहेजी है।'
+                            : "You haven't saved any schemes yet.",
+                        subtitle: strings.isHindi
+                            ? 'किसी भी योजना पर बुकमार्क आइकन दबाकर उसे यहां सहेजें।'
+                            : 'Tap the bookmark on any scheme to keep it here.',
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       FilledButton.icon(
                         onPressed: () => context.go(AppRoutes.search),
                         icon: const Icon(Icons.explore_outlined),
-                        label: const Text('Explore all schemes'),
+                        label: Text(strings.isHindi ? 'सभी योजनाएं देखें' : 'Explore all schemes'),
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFF1E3A8A),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -97,13 +118,17 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${saved.length} scheme${saved.length == 1 ? '' : 's'} saved',
+                                strings.isHindi
+                                    ? '${saved.length} योजनाएं सहेजी गईं'
+                                    : '${saved.length} scheme${saved.length == 1 ? '' : 's'} saved',
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                               ),
                               Text(
                                 categories.isEmpty
-                                    ? 'Saved on this device'
-                                    : 'Across ${categories.length} categor${categories.length == 1 ? 'y' : 'ies'} · saved on this device',
+                                    ? (strings.isHindi ? 'इस डिवाइस पर सहेजा गया' : 'Saved on this device')
+                                    : (strings.isHindi
+                                        ? '${categories.length} श्रेणियों में · इस डिवाइस पर सहेजा गया'
+                                        : 'Across ${categories.length} categor${categories.length == 1 ? 'y' : 'ies'} · saved on this device'),
                                 style: Theme.of(
                                   context,
                                 ).textTheme.bodySmall?.copyWith(color: context.colors.textSecondary),
@@ -121,7 +146,9 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                       child: Row(
                         children: [
                           ChoiceChip(
-                            label: Text('All (${saved.length})'),
+                            label: Text(
+                              strings.isHindi ? 'सभी (${saved.length})' : 'All (${saved.length})',
+                            ),
                             selected: _selectedCategory == null,
                             onSelected: (_) => setState(() => _selectedCategory = null),
                             selectedColor: const Color(0xFF1E3A8A),
@@ -135,7 +162,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                             Padding(
                               padding: const EdgeInsets.only(left: 6),
                               child: ChoiceChip(
-                                label: Text(cat),
+                                label: Text(strings.categoryName(cat)),
                                 selected: _selectedCategory == cat,
                                 onSelected: (_) => setState(() => _selectedCategory = cat),
                                 selectedColor: const Color(0xFF1E3A8A),
