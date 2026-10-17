@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
@@ -11,9 +11,8 @@ import '../../domain/eligibility_attribute.dart';
 import '../../domain/indian_states.dart';
 import '../providers/profile_form_provider.dart';
 import '../providers/recommendations_providers.dart';
-import 'attribute_groups.dart';
-import 'attribute_labels.dart';
-import 'profile_form_controller.dart';
+import 'digilocker_dialog.dart';
+import 'document_scanner_dialog.dart';
 
 sealed class _Page {
   const _Page();
@@ -23,39 +22,24 @@ class _QueryPage extends _Page {
   const _QueryPage();
 }
 
-class _GroupIntroPage extends _Page {
-  const _GroupIntroPage(this.group);
-  final AttributeGroup group;
+class _BasicDetailsPage extends _Page {
+  const _BasicDetailsPage();
 }
 
-class _QuestionPage extends _Page {
-  const _QuestionPage(this.attribute, this.number);
-  final EligibilityAttribute attribute;
-  final int number;
+class _EconomicDetailsPage extends _Page {
+  const _EconomicDetailsPage();
 }
 
-final _totalQuestions = kAttributeGroups.fold(0, (sum, g) => sum + g.attributes.length);
-
-List<_Page> _buildPages() {
-  var n = 0;
-  return [
-    const _QueryPage(),
-    for (final group in kAttributeGroups) ...[
-      _GroupIntroPage(group),
-      for (final attribute in group.attributes) _QuestionPage(attribute, ++n),
-    ],
-  ];
+class _SpecialCriteriaPage extends _Page {
+  const _SpecialCriteriaPage();
 }
 
-/// "question -> answer/skip -> next -> progress -> results", per the
-/// redesign plan: one attribute per screen instead of v1's five
-/// collapsible sections. `ProfileFormController` (via
-/// `profileFormControllerProvider`) is reused as-is for answer state --
-/// only the presentation is new. Query is required (page 1, can't skip);
-/// every one of the 27 attribute questions is skippable, and "Skip
-/// remaining, show results" is available on every question/group-intro
-/// page -- the never-forced-disclosure guarantee as a concrete escape
-/// hatch at every step, not just per-field.
+/// Upgraded Smart Profile Completion Wizard:
+/// 1. Query selection with DigiLocker Fast-Connect & AI Document Photo Scanner.
+/// 2. Streamlined 3-step general & relevant profile:
+///    - Step 1: Basic Demographics (Age, Gender, State/UT)
+///    - Step 2: Socio-Economic Profile (Occupation, Income, Category)
+///    - Step 3: Special Eligibility (Land Owner, Ration Card, Divyang, Rural)
 class RecommendationsWizard extends ConsumerStatefulWidget {
   const RecommendationsWizard({super.key});
 
@@ -64,11 +48,18 @@ class RecommendationsWizard extends ConsumerStatefulWidget {
 }
 
 class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
-  final _pages = _buildPages();
+  static const _pages = <_Page>[
+    _QueryPage(),
+    _BasicDetailsPage(),
+    _EconomicDetailsPage(),
+    _SpecialCriteriaPage(),
+  ];
+
   final _pageController = PageController();
   final _queryController = TextEditingController();
   int _index = 0;
   String? _queryError;
+  String? _autoFillSource;
 
   @override
   void initState() {
@@ -76,12 +67,6 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
     _maybePrefillFromPersistedProfile();
   }
 
-  /// A signed-in user's persisted profile (GET /me/profile) prefills the
-  /// wizard so they don't re-answer everything -- only when nothing has
-  /// been answered yet *this session*: an in-progress edit (however it
-  /// started) always wins over a background prefill. Best-effort: the
-  /// wizard works identically, just blank, if this fails or the caller is
-  /// signed out.
   Future<void> _maybePrefillFromPersistedProfile() async {
     if (!ref.read(isSignedInProvider)) return;
     final controller = ref.read(profileFormControllerProvider);
@@ -91,7 +76,7 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
       if (!mounted || !controller.isEmpty) return;
       controller.loadFrom(response['attributes'] as Map<String, dynamic>);
     } catch (_) {
-      // No prefill -- the wizard still works starting from blank.
+      // Best effort prefill
     }
   }
 
@@ -122,41 +107,69 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
   }
 
   void _next() {
-    if (_index == _pages.length - 1) {
+    if (_index >= _pages.length - 1) {
       _finish();
       return;
     }
     _goTo(_index + 1);
   }
 
-  void _skipQuestion(EligibilityAttribute attribute) {
-    final controller = ref.read(profileFormControllerProvider);
-    switch (attribute.kind) {
-      case AttributeKind.boolean:
-        controller.setBoolean(attribute, null);
-      case AttributeKind.numeric:
-        controller.setNumeric(attribute, null);
-      case AttributeKind.text:
-        controller.setText(attribute, null);
-    }
-    _next();
-  }
-
   void _finish() {
-    final query = _queryController.text.trim();
+    final query = _queryController.text.trim().isEmpty ? 'all eligible schemes' : _queryController.text.trim();
     final controller = ref.read(profileFormControllerProvider);
     final profile = controller.isEmpty ? null : controller.toProfileJson();
+
+    // Persist to user profile in background if signed in
+    if (ref.read(isSignedInProvider) && profile != null) {
+      ref.read(profileRepositoryProvider).updateProfile(profile).ignore();
+    }
+
     ref.read(recommendationsNotifierProvider.notifier).fetch(query: query, profile: profile);
+  }
+
+  void _applyAttributes(Map<String, dynamic> attributes, String sourceLabel) {
+    final controller = ref.read(profileFormControllerProvider);
+    controller.loadFrom(attributes);
+    setState(() {
+      _autoFillSource = sourceLabel;
+      if (_queryController.text.trim().isEmpty) {
+        if (attributes['is_farmer'] == true) {
+          _queryController.text = 'farmer subsidy';
+        } else if (attributes['is_student'] == true) {
+          _queryController.text = 'scholarship';
+        } else if (attributes['is_woman'] == true) {
+          _queryController.text = 'women welfare';
+        } else {
+          _queryController.text = 'all eligible schemes';
+        }
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✓ Verified details loaded from $sourceLabel!'),
+        backgroundColor: const Color(0xFF16A34A),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final page = _pages[_index];
-    final isQuestionOrIntro = page is! _QueryPage;
+    final isQueryPage = page is _QueryPage;
+    final strings = ref.watch(stringsProvider);
 
     return Column(
       children: [
-        if (isQuestionOrIntro) _WizardHeader(index: _index, onBack: () => _goTo(_index - 1), onFinish: _finish),
+        if (!isQueryPage)
+          _WizardHeader(
+            index: _index,
+            totalSteps: _pages.length - 1,
+            onBack: () => _goTo(_index - 1),
+            onFinish: _finish,
+            isHindi: strings.isHindi,
+          ),
         Expanded(
           child: PageView.builder(
             controller: _pageController,
@@ -168,14 +181,20 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
                 _QueryPage() => _QueryStep(
                   controller: _queryController,
                   error: _queryError,
+                  autoFillSource: _autoFillSource,
                   onSubmit: _submitFromQuery,
+                  onOpenDigiLocker: () => DigiLockerDialog.show(
+                    context,
+                    onDataFetched: (attrs, kyc) => _applyAttributes(attrs, 'DigiLocker / UIDAI'),
+                  ),
+                  onOpenDocScanner: () => DocumentScannerDialog.show(
+                    context,
+                    onDataExtracted: (attrs, fields) => _applyAttributes(attrs, 'Aadhaar AI Scanner'),
+                  ),
                 ),
-                _GroupIntroPage() => _GroupIntroStep(group: p.group, onContinue: _next),
-                _QuestionPage() => _QuestionStep(
-                  page: p,
-                  onSkip: () => _skipQuestion(p.attribute),
-                  onNext: _next,
-                ),
+                _BasicDetailsPage() => _BasicDetailsStep(onNext: _next),
+                _EconomicDetailsPage() => _EconomicDetailsStep(onNext: _next),
+                _SpecialCriteriaPage() => _SpecialCriteriaStep(onFinish: _finish),
               };
             },
           ),
@@ -186,16 +205,30 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
 }
 
 class _WizardHeader extends StatelessWidget {
-  const _WizardHeader({required this.index, required this.onBack, required this.onFinish});
+  const _WizardHeader({
+    required this.index,
+    required this.totalSteps,
+    required this.onBack,
+    required this.onFinish,
+    required this.isHindi,
+  });
 
   final int index;
+  final int totalSteps;
   final VoidCallback onBack;
   final VoidCallback onFinish;
+  final bool isHindi;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final progress = (index / _totalQuestions).clamp(0.0, 1.0);
+    final progress = (index / totalSteps).clamp(0.0, 1.0);
+
+    final stepTitles = isHindi
+        ? ['मूल विवरण', 'आर्थिक और व्यवसाय', 'विशेष मानदंड']
+        : ['Basic Details', 'Socio-Economic', 'Special Eligibility'];
+
+    final currentTitle = (index - 1 < stepTitles.length) ? stepTitles[index - 1] : '';
 
     return Column(
       children: [
@@ -209,21 +242,33 @@ class _WizardHeader extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
           child: Row(
             children: [
-              IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back_rounded), tooltip: 'Back'),
+              IconButton(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: 'Back',
+              ),
               Expanded(
-                child: Text(
-                  'Step $index · $_totalQuestions signals available',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF475569),
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Step $index of $totalSteps',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                    ),
+                    Text(
+                      currentTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               TextButton(
                 key: const ValueKey('recommendations_wizard_skip_all_button'),
                 onPressed: onFinish,
-                child: const Text('Skip all'),
+                child: Text(isHindi ? 'सभी छोड़ें' : 'Skip all'),
               ),
             ],
           ),
@@ -233,12 +278,22 @@ class _WizardHeader extends StatelessWidget {
   }
 }
 
-class _QueryStep extends StatelessWidget {
-  const _QueryStep({required this.controller, required this.error, required this.onSubmit});
+class _QueryStep extends ConsumerWidget {
+  const _QueryStep({
+    required this.controller,
+    required this.error,
+    required this.autoFillSource,
+    required this.onSubmit,
+    required this.onOpenDigiLocker,
+    required this.onOpenDocScanner,
+  });
 
   final TextEditingController controller;
   final String? error;
+  final String? autoFillSource;
   final VoidCallback onSubmit;
+  final VoidCallback onOpenDigiLocker;
+  final VoidCallback onOpenDocScanner;
 
   static const _suggestions = [
     'farmer subsidy',
@@ -249,19 +304,20 @@ class _QueryStep extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = context.colors;
-    return Padding(
+    final strings = ref.watch(stringsProvider);
+
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const EyebrowLabel('PERSONALIZED ELIGIBILITY WIZARD'),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'What are you looking for?',
+            strings.isHindi ? 'आप किस प्रकार की योजना खोज रहे हैं?' : 'What schemes are you looking for?',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
@@ -269,21 +325,111 @@ class _QueryStep extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'About 2 min · skip anytime. We\'ll rank real schemes by how well they fit.',
+            strings.isHindi
+                ? 'स्मार्ट प्रोफ़ाइल या फ़ास्ट-वेरिफाई से तुरंत अनुकूल योजनाएं खोजें।'
+                : 'Complete your profile or fast-fill with DigiLocker to see schemes matched to you.',
             style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
+          const SizedBox(height: AppSpacing.md),
+
+          // FAST-FILL HERO BAR
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF0F766E).withValues(alpha: 0.08),
+                  const Color(0xFF2563EB).withValues(alpha: 0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(color: const Color(0xFF93C5FD)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.flash_on_rounded, color: Color(0xFFD97706), size: 20),
+                    const SizedBox(width: 6),
+                    Text(
+                      strings.isHindi ? '1-क्लिक फास्ट-वेरिफिकेशन' : '1-Click Instant Fast-Fill Options',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E3A8A),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (autoFillSource != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '✓ $autoFillSource',
+                          style: const TextStyle(color: Color(0xFF16A34A), fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  strings.isHindi
+                      ? 'डिजिलॉकर से सीधे सरकारी रिकॉर्ड लाएं या आधार/दस्तावेज़ की फोटो स्कैन करें।'
+                      : 'Connect with DigiLocker or scan Aadhaar card photo to auto-fill verified details.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF334155)),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF0F766E),
+                          side: const BorderSide(color: Color(0xFF0F766E)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: onOpenDigiLocker,
+                        icon: const Icon(Icons.verified_user_rounded, size: 16),
+                        label: Text(
+                          strings.isHindi ? 'डिजिलॉकर कनेक्ट' : 'DigiLocker',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF2563EB),
+                          side: const BorderSide(color: Color(0xFF2563EB)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: onOpenDocScanner,
+                        icon: const Icon(Icons.document_scanner_rounded, size: 16),
+                        label: Text(
+                          strings.isHindi ? 'आधार स्कैन' : 'Scan Aadhaar',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: AppSpacing.lg),
           TextField(
             key: const ValueKey('recommendations_query_field'),
             controller: controller,
-            autofocus: true,
             decoration: InputDecoration(
-              hintText: 'e.g. farmer subsidy, scholarship',
+              hintText: strings.isHindi ? 'उदा. किसान सब्सिडी, छात्रवृत्ति' : 'e.g. farmer subsidy, scholarship',
               errorText: error,
               prefixIcon: const Icon(Icons.search_rounded),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => onSubmit(),
@@ -294,35 +440,24 @@ class _QueryStep extends StatelessWidget {
             runSpacing: 6,
             children: [
               for (final s in _suggestions)
-                InkWell(
-                  onTap: () {
+                ActionChip(
+                  label: Text(s, style: const TextStyle(fontSize: 12)),
+                  backgroundColor: colors.surfaceMuted,
+                  onPressed: () {
                     controller.text = s;
                     onSubmit();
                   },
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceMuted,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                      border: Border.all(color: colors.divider),
-                    ),
-                    child: Text(
-                      s,
-                      style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500),
-                    ),
-                  ),
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.xl),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               key: const ValueKey('recommendations_wizard_continue_button'),
               onPressed: onSubmit,
               icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Continue to Eligibility Questions'),
+              label: Text(strings.isHindi ? 'आगे बढ़ें: प्रोफ़ाइल भरें' : 'Continue to Smart Profile'),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF1E3A8A),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -335,118 +470,132 @@ class _QueryStep extends StatelessWidget {
   }
 }
 
-class _GroupIntroStep extends StatelessWidget {
-  const _GroupIntroStep({required this.group, required this.onContinue});
+// ---------------------------------------------------------------------------
+// STEP 1: BASIC DEMOGRAPHICS (Age, Gender, State/UT)
+// ---------------------------------------------------------------------------
+class _BasicDetailsStep extends ConsumerWidget {
+  const _BasicDetailsStep({required this.onNext});
 
-  final AttributeGroup group;
-  final VoidCallback onContinue;
-
-  static const _icons = {
-    'Demographic': Icons.groups_outlined,
-    'Economic': Icons.account_balance_outlined,
-    'Occupation': Icons.work_outline,
-    'Housing & location': Icons.home_outlined,
-    'Health': Icons.favorite_border,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.colors;
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: colors.brandTint,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            ),
-            child: Icon(_icons[group.title] ?? Icons.help_outline, color: colors.brand),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'Let\'s talk about your ${group.title.toLowerCase()}.',
-            style: theme.textTheme.headlineSmall,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            '${group.attributes.length} optional question${group.attributes.length == 1 ? '' : 's'} -- skip any of them.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: onContinue,
-            icon: const Icon(Icons.arrow_forward),
-            label: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuestionStep extends ConsumerWidget {
-  const _QuestionStep({required this.page, required this.onSkip, required this.onNext});
-
-  final _QuestionPage page;
-  final VoidCallback onSkip;
   final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final controller = ref.watch(profileFormControllerProvider);
-    final attribute = page.attribute;
+    final strings = ref.watch(stringsProvider);
 
-    return Padding(
+    final age = controller.valueOf(EligibilityAttribute.age) as double?;
+    final isWoman = controller.valueOf(EligibilityAttribute.isWoman) as bool?;
+    final stateCode = controller.valueOf(EligibilityAttribute.stateCode) as String?;
+
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            child: LinearProgressIndicator(
-              value: page.number / _totalQuestions,
-              minHeight: 4,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            ),
+          Text(
+            strings.isHindi ? 'मूल जनसांख्यिकी विवरण' : 'Basic Demographics',
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: AppSpacing.md),
-          EyebrowLabel('Question ${page.number}'),
-          const SizedBox(height: AppSpacing.xs),
-          Text(attributeLabel(attribute), style: theme.textTheme.headlineSmall),
-          if (attribute == EligibilityAttribute.stateCode) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Some support is specific to a state or rural/urban area.',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-          const SizedBox(height: AppSpacing.xl),
-          Expanded(
-            child: SingleChildScrollView(
-              child: _AnswerControl(attribute: attribute, controller: controller),
-            ),
+          const SizedBox(height: 4),
+          Text(
+            strings.isHindi ? 'आपकी उम्र, लिंग और राज्य के आधार पर पात्रता निर्धारित होती है।' : 'Eligibility depends heavily on age, gender and state.',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
           ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Age
+          Text(strings.isHindi ? 'आपकी आयु (वर्ष)' : 'Your Age (Years)', style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(onPressed: onSkip, child: const Text('Skip for now')),
+                child: Slider(
+                  value: (age ?? 28).clamp(1.0, 100.0),
+                  min: 1,
+                  max: 100,
+                  divisions: 99,
+                  label: '${(age ?? 28).toInt()}',
+                  onChanged: (val) => controller.setNumeric(EligibilityAttribute.age, val),
+                ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onNext,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Next question'),
+              Container(
+                width: 60,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${(age ?? 28).toInt()} yrs',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Gender
+          Text(strings.isHindi ? 'लिंग' : 'Gender', style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: Text(strings.isHindi ? 'महिला' : 'Female'),
+                selected: isWoman == true,
+                onSelected: (val) => controller.setBoolean(EligibilityAttribute.isWoman, val ? true : null),
+              ),
+              ChoiceChip(
+                label: Text(strings.isHindi ? 'पुरुष' : 'Male'),
+                selected: isWoman == false,
+                onSelected: (val) => controller.setBoolean(EligibilityAttribute.isWoman, val ? false : null),
+              ),
+              ChoiceChip(
+                label: Text(strings.isHindi ? 'अन्य / छोड़ें' : 'Other / Skip'),
+                selected: isWoman == null,
+                onSelected: (_) => controller.setBoolean(EligibilityAttribute.isWoman, null),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Indian State Dropdown
+          Text(strings.isHindi ? 'निवास का राज्य / केंद्र शासित प्रदेश' : 'State / Union Territory of Residence', style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: stateCode,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              hintText: strings.isHindi ? 'राज्य चुनें' : 'Select State / UT',
+            ),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('All India / Central Only', overflow: TextOverflow.ellipsis)),
+              for (final state in indianStates)
+                DropdownMenuItem(
+                  value: state.$1,
+                  child: Text('${state.$2} (${state.$1})', overflow: TextOverflow.ellipsis),
+                ),
+            ],
+            onChanged: (val) => controller.setText(EligibilityAttribute.stateCode, val),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onNext,
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: Text(strings.isHindi ? 'अगला: आर्थिक और व्यवसाय' : 'Next: Socio-Economic Profile'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
           ),
         ],
       ),
@@ -454,170 +603,278 @@ class _QuestionStep extends ConsumerWidget {
   }
 }
 
-class _AnswerControl extends StatefulWidget {
-  const _AnswerControl({required this.attribute, required this.controller});
+// ---------------------------------------------------------------------------
+// STEP 2: SOCIO-ECONOMIC (Occupation, Income, Social Category)
+// ---------------------------------------------------------------------------
+class _EconomicDetailsStep extends ConsumerWidget {
+  const _EconomicDetailsStep({required this.onNext});
 
-  final EligibilityAttribute attribute;
-  final ProfileFormController controller;
-
-  @override
-  State<_AnswerControl> createState() => _AnswerControlState();
-}
-
-class _AnswerControlState extends State<_AnswerControl> {
-  late final _numericController = TextEditingController(
-    text: widget.controller.valueOf(widget.attribute)?.toString() ?? '',
-  );
+  final VoidCallback onNext;
 
   @override
-  void dispose() {
-    _numericController.dispose();
-    super.dispose();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final controller = ref.watch(profileFormControllerProvider);
+    final strings = ref.watch(stringsProvider);
 
-  @override
-  Widget build(BuildContext context) {
-    switch (widget.attribute.kind) {
-      case AttributeKind.boolean:
-        final value = widget.controller.valueOf(widget.attribute) as bool?;
-        return Column(
-          children: [
-            _ChoiceButton(
-              label: 'Yes',
-              selected: value == true,
-              onTap: () => widget.controller.setBoolean(widget.attribute, true),
+    final isFarmer = controller.valueOf(EligibilityAttribute.isFarmer) == true;
+    final isStudent = controller.valueOf(EligibilityAttribute.isStudent) == true;
+    final isUnorganized = controller.valueOf(EligibilityAttribute.isUnorganizedWorker) == true;
+    final isGovtEmployee = controller.valueOf(EligibilityAttribute.isGovtEmployee) == true;
+
+    final isObc = controller.valueOf(EligibilityAttribute.isObc) == true;
+    final isScSt = controller.valueOf(EligibilityAttribute.isScSt) == true;
+    final isMinority = controller.valueOf(EligibilityAttribute.isMinority) == true;
+
+    final income = controller.valueOf(EligibilityAttribute.annualIncome) as double?;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.isHindi ? 'आर्थिक व व्यवसाय प्रोफ़ाइल' : 'Socio-Economic Profile',
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            strings.isHindi ? 'व्यवसाय, आय और सामाजिक श्रेणी से विशिष्ट लाभ प्राप्त होते हैं।' : 'Occupation, income tier, and category unlock key benefits.',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Primary Occupation
+          Text(strings.isHindi ? 'प्रमुख व्यवसाय / पेशा' : 'Primary Occupation', style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilterChip(
+                label: Text(strings.isHindi ? '🌾 किसान / कृषि' : '🌾 Farmer / Agriculture'),
+                selected: isFarmer,
+                onSelected: (val) {
+                  controller.setBoolean(EligibilityAttribute.isFarmer, val ? true : null);
+                  if (val) controller.setBoolean(EligibilityAttribute.ownsCultivableLand, true);
+                },
+              ),
+              FilterChip(
+                label: Text(strings.isHindi ? '🎓 छात्र / विद्यार्थी' : '🎓 Student'),
+                selected: isStudent,
+                onSelected: (val) => controller.setBoolean(EligibilityAttribute.isStudent, val ? true : null),
+              ),
+              FilterChip(
+                label: Text(strings.isHindi ? '🛠️ असंगठित / कारीगर' : '🛠️ Unorganized / Artisan'),
+                selected: isUnorganized,
+                onSelected: (val) => controller.setBoolean(EligibilityAttribute.isUnorganizedWorker, val ? true : null),
+              ),
+              FilterChip(
+                label: Text(strings.isHindi ? '🏛️ सरकारी कर्मचारी' : '🏛️ Govt Employee'),
+                selected: isGovtEmployee,
+                onSelected: (val) => controller.setBoolean(EligibilityAttribute.isGovtEmployee, val ? true : null),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Social Category
+          Text(strings.isHindi ? 'सामाजिक श्रेणी / वर्ग' : 'Social Category', style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('General'),
+                selected: !isObc && !isScSt && !isMinority,
+                onSelected: (_) {
+                  controller.setBoolean(EligibilityAttribute.isObc, null);
+                  controller.setBoolean(EligibilityAttribute.isScSt, null);
+                  controller.setBoolean(EligibilityAttribute.isMinority, null);
+                },
+              ),
+              ChoiceChip(
+                label: const Text('OBC'),
+                selected: isObc,
+                onSelected: (val) {
+                  controller.setBoolean(EligibilityAttribute.isObc, val ? true : null);
+                  if (val) controller.setBoolean(EligibilityAttribute.isScSt, null);
+                },
+              ),
+              ChoiceChip(
+                label: const Text('SC / ST'),
+                selected: isScSt,
+                onSelected: (val) {
+                  controller.setBoolean(EligibilityAttribute.isScSt, val ? true : null);
+                  if (val) controller.setBoolean(EligibilityAttribute.isObc, null);
+                },
+              ),
+              ChoiceChip(
+                label: Text(strings.isHindi ? 'अल्पसंख्यक' : 'Minority'),
+                selected: isMinority,
+                onSelected: (val) => controller.setBoolean(EligibilityAttribute.isMinority, val ? true : null),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Annual Household Income
+          Text(strings.isHindi ? 'वार्षिक पारिवारिक आय' : 'Annual Household Income', style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ActionChip(
+                label: const Text('< ₹1,00,000 (BPL)'),
+                backgroundColor: income != null && income <= 100000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                onPressed: () {
+                  controller.setNumeric(EligibilityAttribute.annualIncome, 90000);
+                  controller.setBoolean(EligibilityAttribute.hasBplCard, true);
+                },
+              ),
+              ActionChip(
+                label: const Text('₹1L – ₹2.5L (EWS)'),
+                backgroundColor: income != null && income > 100000 && income <= 250000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                onPressed: () => controller.setNumeric(EligibilityAttribute.annualIncome, 180000),
+              ),
+              ActionChip(
+                label: const Text('₹2.5L – ₹5.0L (LIG)'),
+                backgroundColor: income != null && income > 250000 && income <= 500000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                onPressed: () => controller.setNumeric(EligibilityAttribute.annualIncome, 350000),
+              ),
+              ActionChip(
+                label: const Text('> ₹5,00,000'),
+                backgroundColor: income != null && income > 500000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                onPressed: () => controller.setNumeric(EligibilityAttribute.annualIncome, 600000),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onNext,
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: Text(strings.isHindi ? 'अगला: विशेष मानदंड' : 'Next: Special Eligibility'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            _ChoiceButton(
-              label: 'No',
-              selected: value == false,
-              onTap: () => widget.controller.setBoolean(widget.attribute, false),
-            ),
-          ],
-        );
-      case AttributeKind.numeric:
-        return TextField(
-          controller: _numericController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-          style: Theme.of(context).textTheme.headlineSmall,
-          textAlign: TextAlign.center,
-          decoration: const InputDecoration(hintText: '0'),
-          onChanged: (text) => widget.controller.setNumeric(widget.attribute, double.tryParse(text)),
-        );
-      case AttributeKind.text:
-        return _StatePicker(controller: widget.controller);
-    }
-  }
-}
-
-class _ChoiceButton extends StatelessWidget {
-  const _ChoiceButton({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: selected ? colors.primaryAction : colors.surface,
-          foregroundColor: selected ? colors.onPrimaryAction : colors.textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          alignment: Alignment.centerLeft,
-        ),
-        child: Align(alignment: Alignment.centerLeft, child: Text(label)),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _StatePicker extends StatelessWidget {
-  const _StatePicker({required this.controller});
+// ---------------------------------------------------------------------------
+// STEP 3: SPECIAL CRITERIA (Farmer Land, Ration Card, Disability, Rural)
+// ---------------------------------------------------------------------------
+class _SpecialCriteriaStep extends ConsumerWidget {
+  const _SpecialCriteriaStep({required this.onFinish});
 
-  final ProfileFormController controller;
-
-  Future<void> _openPicker(BuildContext context) async {
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) => const _StateSearchSheet(),
-    );
-    if (selected != null) controller.setText(EligibilityAttribute.stateCode, selected);
-  }
+  final VoidCallback onFinish;
 
   @override
-  Widget build(BuildContext context) {
-    final code = controller.valueOf(EligibilityAttribute.stateCode) as String?;
-    final name = indianStates.where((s) => s.$1 == code).map((s) => s.$2).firstOrNull;
-    return Column(
-      children: [
-        _ChoiceButton(
-          label: name ?? 'Select your state',
-          selected: code != null,
-          onTap: () => _openPicker(context),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _ChoiceButton(
-          label: "I'm not sure",
-          selected: false,
-          onTap: () => controller.setText(EligibilityAttribute.stateCode, null),
-        ),
-      ],
-    );
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final controller = ref.watch(profileFormControllerProvider);
+    final strings = ref.watch(stringsProvider);
 
-class _StateSearchSheet extends StatefulWidget {
-  const _StateSearchSheet();
+    final ownsLand = controller.valueOf(EligibilityAttribute.ownsCultivableLand) == true;
+    final bpl = controller.valueOf(EligibilityAttribute.hasBplCard) == true;
+    final divyang = controller.valueOf(EligibilityAttribute.isDivyang) == true;
+    final rural = controller.valueOf(EligibilityAttribute.isRural) == true;
 
-  @override
-  State<_StateSearchSheet> createState() => _StateSearchSheetState();
-}
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.isHindi ? 'विशेष पात्रता मानदंड (वैकल्पिक)' : 'Special Eligibility Criteria',
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            strings.isHindi ? 'यदि लागू हो तो इन विकल्पों को चालू करें ताकि कोई विशेष योजना न छूटे।' : 'Toggle any of these criteria to qualify for special targeted schemes.',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: AppSpacing.lg),
 
-class _StateSearchSheetState extends State<_StateSearchSheet> {
-  String _query = '';
+          SwitchListTile(
+            title: Text(strings.isHindi ? 'कृषि भूमि के मालिक हैं' : 'Owns Cultivable / Agricultural Land'),
+            subtitle: Text(strings.isHindi ? 'पीएम-किसान और कृषि सब्सिडी के लिए' : 'For PM-KISAN, crop subsidies, and farm loans'),
+            value: ownsLand,
+            onChanged: (val) {
+              controller.setBoolean(EligibilityAttribute.ownsCultivableLand, val ? true : null);
+              if (val) controller.setBoolean(EligibilityAttribute.isFarmer, true);
+            },
+          ),
+          const Divider(),
 
-  @override
-  Widget build(BuildContext context) {
-    final results = indianStates
-        .where((s) => s.$2.toLowerCase().contains(_query.toLowerCase()))
-        .toList();
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: TextField(
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Search states',
-                  prefixIcon: Icon(Icons.search),
+          SwitchListTile(
+            title: Text(strings.isHindi ? 'बीपीएल / अंत्योदय / पीला राशन कार्ड' : 'Has BPL / Yellow / Antyodaya Ration Card'),
+            subtitle: Text(strings.isHindi ? 'राशन, आवास और खाद्य सुरक्षा योजनाओं के लिए' : 'For food security, housing and subsidized grains'),
+            value: bpl,
+            onChanged: (val) => controller.setBoolean(EligibilityAttribute.hasBplCard, val ? true : null),
+          ),
+          const Divider(),
+
+          SwitchListTile(
+            title: Text(strings.isHindi ? 'दिव्यांग / विशेष रूप से सक्षम' : 'Person with Disability (Divyang)'),
+            subtitle: Text(strings.isHindi ? 'दिव्यांग पेंशन, उपकरण और आरक्षण योजनाओं के लिए' : 'For disability pensions, assistive devices, and quotas'),
+            value: divyang,
+            onChanged: (val) => controller.setBoolean(EligibilityAttribute.isDivyang, val ? true : null),
+          ),
+          const Divider(),
+
+          SwitchListTile(
+            title: Text(strings.isHindi ? 'ग्रामीण क्षेत्र में निवास' : 'Rural Resident'),
+            subtitle: Text(strings.isHindi ? 'मनरेगा और ग्रामीण विकास योजनाओं के लिए' : 'For rural housing, MGNREGA, and village welfare'),
+            value: rural,
+            onChanged: (val) => controller.setBoolean(EligibilityAttribute.isRural, val ? true : null),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_rounded, color: Color(0xFF16A34A)),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    strings.isHindi ? 'प्रोफ़ाइल तैयार है! आपके उत्तरों के आधार पर योजनाएं रैंक की जाएंगी।' : 'Profile ready! Real schemes will be ranked by your answers.',
+                    style: const TextStyle(color: Color(0xFF14532D), fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                 ),
-                onChanged: (v) => setState(() => _query = v),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onFinish,
+              icon: const Icon(Icons.search_rounded),
+              label: Text(strings.isHindi ? 'अनुकूल योजनाएं देखें' : 'Save & View My Schemes'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: ListView.builder(
-                itemCount: results.length,
-                itemBuilder: (context, i) => ListTile(
-                  title: Text(results[i].$2),
-                  onTap: () => Navigator.of(context).pop(results[i].$1),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

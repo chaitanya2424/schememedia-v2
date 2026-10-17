@@ -16,6 +16,7 @@ from schememedia.api.v1.routers import (
     comments,
     likes,
     profile,
+    profile_automation,
     recommendations,
     saved_schemes,
     schemes,
@@ -30,6 +31,7 @@ api_router.include_router(schemes.router)
 api_router.include_router(assistant.router)
 api_router.include_router(auth.router)
 api_router.include_router(profile.router)
+api_router.include_router(profile_automation.router)
 api_router.include_router(saved_schemes.router)
 api_router.include_router(likes.router)
 api_router.include_router(comments.router)

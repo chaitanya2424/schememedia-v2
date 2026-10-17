@@ -1,0 +1,386 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/localization/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../profile/data/profile_automation_repository.dart';
+
+class DigiLockerDialog extends ConsumerStatefulWidget {
+  const DigiLockerDialog({required this.onDataFetched, super.key});
+
+  final void Function(Map<String, dynamic> attributes, Map<String, dynamic> kycData) onDataFetched;
+
+  static Future<void> show(
+    BuildContext context, {
+    required void Function(Map<String, dynamic> attributes, Map<String, dynamic> kycData) onDataFetched,
+  }) {
+    return showDialog(
+      context: context,
+      builder: (context) => DigiLockerDialog(onDataFetched: onDataFetched),
+    );
+  }
+
+  @override
+  ConsumerState<DigiLockerDialog> createState() => _DigiLockerDialogState();
+}
+
+class _DigiLockerDialogState extends ConsumerState<DigiLockerDialog> {
+  final _aadhaarController = TextEditingController();
+  final _mobileController = TextEditingController();
+  final _otpController = TextEditingController();
+  String _selectedPersona = 'farmer';
+  bool _isLoading = false;
+  String? _error;
+  Map<String, dynamic>? _previewData;
+
+  @override
+  void dispose() {
+    _aadhaarController.dispose();
+    _mobileController.dispose();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchFromDigiLocker({String? persona}) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final repo = ref.read(profileAutomationRepositoryProvider);
+      final res = await repo.digilockerFetch(
+        aadhaarNumber: _aadhaarController.text.trim().isNotEmpty ? _aadhaarController.text.trim() : null,
+        mobileNumber: _mobileController.text.trim().isNotEmpty ? _mobileController.text.trim() : null,
+        otp: _otpController.text.trim().isNotEmpty ? _otpController.text.trim() : null,
+        demoPersona: persona ?? _selectedPersona,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _previewData = res;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to connect to DigiLocker gateway. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _applyAndClose() {
+    if (_previewData != null) {
+      final attrs = _previewData!['attributes'] as Map<String, dynamic>? ?? {};
+      final kyc = _previewData!['kyc_data'] as Map<String, dynamic>? ?? {};
+      widget.onDataFetched(attrs, kyc);
+    }
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final strings = ref.watch(stringsProvider);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540, maxHeight: 680),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F766E).withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.verified_user_rounded, color: Color(0xFF0F766E), size: 24),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              strings.isHindi ? 'डिजिलॉकर फ़ास्ट-वेरिफाई' : 'DigiLocker Fast-Verify',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                strings.isHindi ? 'सत्यापित' : 'VERIFIED',
+                                style: const TextStyle(
+                                  color: Color(0xFF16A34A),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          strings.isHindi
+                              ? 'सरकारी रिकॉर्ड से सीधे अपनी प्रोफाइल भरें'
+                              : 'Fetch verified citizen attributes from DigiLocker / UIDAI',
+                          style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  child: _previewData == null ? _buildForm(theme, colors, strings) : _buildPreview(theme, colors, strings),
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+              if (_previewData != null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setState(() => _previewData = null),
+                        child: Text(strings.isHindi ? 'पुनः प्रयास करें' : 'Choose Another'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
+                        onPressed: _applyAndClose,
+                        icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                        label: Text(strings.isHindi ? 'प्रोफ़ाइल में लागू करें' : 'Apply to Profile'),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForm(ThemeData theme, AppColors colors, AppStrings strings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          strings.isHindi ? '1-क्लिक टेस्ट नागरिक प्रोफाइल चुनें:' : 'Select a 1-Click Citizen Profile for Demo:',
+          style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _personaChip('farmer', strings.isHindi ? '🌾 किसान (महिला, पुणे)' : '🌾 Farmer (Sunita Sharma)', colors),
+            _personaChip('student', strings.isHindi ? '🎓 छात्र (20 वर्ष, गुजरात)' : '🎓 Student (Aarav Patel)', colors),
+            _personaChip('woman_artisan', strings.isHindi ? '🧵 महिला कारीगर (यूपी)' : '🧵 Artisan (Pooja Devi)', colors),
+            _personaChip('senior_citizen', strings.isHindi ? '👴 वरिष्ठ नागरिक (कर्नाटक)' : '👴 Senior (Ramchandra)', colors),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: colors.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: colors.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                strings.isHindi ? 'या आधार / मोबाइल से सत्यापित करें' : 'Or Verify with Aadhaar / Mobile',
+                style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: _aadhaarController,
+                keyboardType: TextInputType.number,
+                maxLength: 12,
+                decoration: InputDecoration(
+                  labelText: strings.isHindi ? '12-अंकीय आधार नंबर' : '12-Digit Aadhaar Number',
+                  hintText: 'e.g. 5482 9182 4829',
+                  prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+                  counterText: '',
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: _mobileController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                decoration: InputDecoration(
+                  labelText: strings.isHindi ? 'लिंक्ड मोबाइल नंबर' : 'Linked Mobile Number',
+                  hintText: 'e.g. 9876543210',
+                  prefixIcon: const Icon(Icons.phone_android_rounded, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+                  counterText: '',
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        if (_error != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(_error!, style: TextStyle(color: theme.colorScheme.error, fontSize: 13)),
+        ],
+
+        const SizedBox(height: AppSpacing.lg),
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
+            onPressed: _isLoading ? null : () => _fetchFromDigiLocker(),
+            icon: _isLoading
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.cloud_download_outlined, size: 20),
+            label: Text(
+              _isLoading
+                  ? (strings.isHindi ? 'कनेक्ट हो रहा है...' : 'Connecting DigiLocker...')
+                  : (strings.isHindi ? 'सत्यापित विवरण प्राप्त करें' : 'Fetch Verified Details'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _personaChip(String id, String label, AppColors colors) {
+    final isSelected = _selectedPersona == id;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (val) {
+        if (val) {
+          setState(() => _selectedPersona = id);
+          _fetchFromDigiLocker(persona: id);
+        }
+      },
+      selectedColor: const Color(0xFF0F766E).withValues(alpha: 0.15),
+      labelStyle: TextStyle(
+        color: isSelected ? const Color(0xFF0F766E) : colors.textPrimary,
+        fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+        fontSize: 13,
+      ),
+    );
+  }
+
+  Widget _buildPreview(ThemeData theme, AppColors colors, AppStrings strings) {
+    final kyc = _previewData!['kyc_data'] as Map<String, dynamic>? ?? {};
+    final maskedId = _previewData!['id_masked'] as String? ?? 'XXXX-XXXX-4829';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  strings.isHindi ? 'सफलतापूर्वक सत्यापित (डिजीलॉकर/UIDAI)' : 'Verified Identity Authenticated',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF15803D),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                maskedId,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D)),
+              ),
+            ],
+          ),
+          const Divider(height: 18),
+          _fieldRow('Full Name', kyc['name'] ?? 'Citizen Name'),
+          _fieldRow('Age / DOB', '${kyc['age']} years (${kyc['dob'] ?? 'N/A'})'),
+          _fieldRow('Gender', kyc['gender'] ?? 'Female'),
+          _fieldRow('State / UT', '${kyc['state']} (${kyc['state_code']})'),
+          _fieldRow('Category', kyc['category'] ?? 'General'),
+          _fieldRow('Occupation', kyc['occupation'] ?? 'Agriculture'),
+          _fieldRow('Ration Card', kyc['ration_card_type'] ?? 'BPL'),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: Color(0xFF0F766E), size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    strings.isHindi
+                        ? 'ये सभी विवरण आपकी योजना पात्रता के लिए तुरंत स्वचालित रूप से भर दिए जाएंगे।'
+                        : 'These attributes will be automatically populated into your eligibility profile.',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF14532D)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+        ],
+      ),
+    );
+  }
+}

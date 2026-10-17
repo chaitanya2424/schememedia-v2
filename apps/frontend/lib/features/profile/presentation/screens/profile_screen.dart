@@ -12,6 +12,8 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../auth/domain/auth_models.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../recommendations/presentation/widgets/digilocker_dialog.dart';
+import '../../../recommendations/presentation/widgets/document_scanner_dialog.dart';
 import '../providers/profile_providers.dart';
 
 /// A full product screen. Signed out: an honest empty state -- never a
@@ -271,34 +273,103 @@ class _ProfileCompletionCard extends ConsumerWidget {
         final total = response?['total_count'] as int? ?? 27;
         return Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.fact_check_outlined, color: colors.brand),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      strings.isHindi ? '$total में से $answered उत्तर दिए गए' : '$answered of $total answered',
-                      style: theme.textTheme.bodyMedium,
+              Row(
+                children: [
+                  Icon(Icons.fact_check_outlined, color: colors.brand),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          strings.isHindi ? '$total में से $answered उत्तर दिए गए' : '$answered of $total answered',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        Text(
+                          answered == 0
+                              ? (strings.isHindi
+                                  ? 'अपनी प्रोफ़ाइल बनाने के लिए "आपके लिए" में प्रश्नों के उत्तर दें।'
+                                  : 'Answer questions in For You to build your profile.')
+                              : (strings.isHindi
+                                  ? 'आपकी सिफारिशों को सटीक बनाने के लिए उपयोग किया जाता है।'
+                                  : 'Used to personalize your recommendations.'),
+                          style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                        ),
+                      ],
                     ),
-                    Text(
-                      answered == 0
-                          ? (strings.isHindi
-                              ? 'अपनी प्रोफ़ाइल बनाने के लिए "आपके लिए" में प्रश्नों के उत्तर दें।'
-                              : 'Answer questions in For You to build your profile.')
-                          : (strings.isHindi
-                              ? 'आपकी सिफारिशों को सटीक बनाने के लिए उपयोग किया जाता है।'
-                              : 'Used to personalize your recommendations.'),
-                      style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
-                    ),
-                  ],
-                ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.go(AppRoutes.recommendations),
+                    child: Text(answered == 0 ? strings.startProfile : strings.updateProfile),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () => context.go(AppRoutes.recommendations),
-                child: Text(answered == 0 ? strings.startProfile : strings.updateProfile),
+              const Divider(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF0F766E),
+                        side: const BorderSide(color: Color(0xFF0F766E)),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      onPressed: () => DigiLockerDialog.show(
+                        context,
+                        onDataFetched: (attrs, kyc) async {
+                          await ref.read(profileRepositoryProvider).updateProfile(attrs);
+                          ref.invalidate(myProfileProvider);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✓ Profile updated from DigiLocker!'),
+                                backgroundColor: Color(0xFF16A34A),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      icon: const Icon(Icons.verified_user_rounded, size: 16),
+                      label: Text(
+                        strings.isHindi ? 'डिजिलॉकर' : 'DigiLocker',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF2563EB),
+                        side: const BorderSide(color: Color(0xFF2563EB)),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      onPressed: () => DocumentScannerDialog.show(
+                        context,
+                        onDataExtracted: (attrs, fields) async {
+                          await ref.read(profileRepositoryProvider).updateProfile(attrs);
+                          ref.invalidate(myProfileProvider);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✓ Profile updated from Document Scanner!'),
+                                backgroundColor: Color(0xFF2563EB),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      icon: const Icon(Icons.document_scanner_rounded, size: 16),
+                      label: Text(
+                        strings.isHindi ? 'आधार स्कैन' : 'Scan Aadhaar',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
