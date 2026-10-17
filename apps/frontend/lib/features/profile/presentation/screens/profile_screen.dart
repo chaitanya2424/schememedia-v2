@@ -150,9 +150,14 @@ class _SignedOutHeader extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: FilledButton(
+              child: FilledButton.icon(
                 onPressed: () => context.push(AppRoutes.login),
-                child: const Text('Sign in'),
+                icon: const Icon(Icons.login_rounded),
+                label: const Text('Sign in / Create Account'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3A8A),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
             ),
           ],

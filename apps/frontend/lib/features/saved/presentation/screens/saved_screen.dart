@@ -20,16 +20,29 @@ import '../../../../core/widgets/scheme_card.dart';
 /// computation against whatever profile existed when the scheme was
 /// saved, and would silently go stale as the profile changes -- omitted
 /// rather than shown as if still current.
-class SavedScreen extends ConsumerWidget {
+class SavedScreen extends ConsumerStatefulWidget {
   const SavedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SavedScreen> createState() => _SavedScreenState();
+}
+
+class _SavedScreenState extends ConsumerState<SavedScreen> {
+  String? _selectedCategory;
+
+  @override
+  Widget build(BuildContext context) {
     final saved = ref.watch(savedSchemesProvider).values.toList();
-    final categories = saved.map((s) => s.category).whereType<String>().toSet();
+    final categories = saved.map((s) => s.category).whereType<String>().toSet().toList()..sort();
+
+    final filtered = _selectedCategory == null
+        ? saved
+        : saved.where((s) => s.category == _selectedCategory).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved')),
+      appBar: AppBar(
+        title: const Text('Saved Schemes', style: TextStyle(fontWeight: FontWeight.w700)),
+      ),
       body: SafeArea(
         child: ResponsiveContainer(
           child: SingleChildScrollView(
@@ -37,7 +50,7 @@ class SavedScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const EyebrowLabel('Your collection'),
+                const EyebrowLabel('SAVED SHORTLIST'),
                 const SizedBox(height: AppSpacing.xs),
                 Text('Saved for later.', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: AppSpacing.xs),
@@ -47,22 +60,45 @@ class SavedScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 if (saved.isEmpty)
-                  EmptyState(
-                    icon: Icons.bookmark_outline,
-                    title: "You haven't saved any schemes yet.",
-                    subtitle: 'Tap the bookmark on any scheme to keep it here.',
+                  Column(
+                    children: [
+                      const EmptyState(
+                        icon: Icons.bookmark_outline_rounded,
+                        title: "You haven't saved any schemes yet.",
+                        subtitle: 'Tap the bookmark on any scheme to keep it here.',
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      FilledButton.icon(
+                        onPressed: () => context.go(AppRoutes.search),
+                        icon: const Icon(Icons.explore_outlined),
+                        label: const Text('Explore all schemes'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E3A8A),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                    ],
                   )
                 else ...[
                   AppCard(
                     child: Row(
                       children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                          ),
+                          child: const Icon(Icons.bookmark_rounded, color: Color(0xFF1E3A8A), size: 24),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 '${saved.length} scheme${saved.length == 1 ? '' : 's'} saved',
-                                style: Theme.of(context).textTheme.titleMedium,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                               ),
                               Text(
                                 categories.isEmpty
@@ -78,8 +114,44 @@ class SavedScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (categories.length > 1) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ChoiceChip(
+                            label: Text('All (${saved.length})'),
+                            selected: _selectedCategory == null,
+                            onSelected: (_) => setState(() => _selectedCategory = null),
+                            selectedColor: const Color(0xFF1E3A8A),
+                            labelStyle: TextStyle(
+                              color: _selectedCategory == null ? Colors.white : null,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            showCheckmark: false,
+                          ),
+                          for (final cat in categories)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: ChoiceChip(
+                                label: Text(cat),
+                                selected: _selectedCategory == cat,
+                                onSelected: (_) => setState(() => _selectedCategory = cat),
+                                selectedColor: const Color(0xFF1E3A8A),
+                                labelStyle: TextStyle(
+                                  color: _selectedCategory == cat ? Colors.white : null,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                showCheckmark: false,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
-                  for (final scheme in saved)
+                  for (final scheme in filtered)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: SchemeCard(
