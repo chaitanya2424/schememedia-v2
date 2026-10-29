@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     # directly, only the provider factory.
     llm_provider: Literal["gemini", "anthropic"] = "gemini"
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-3.6-flash"
+    gemini_model: str = "gemini-3.5-flash"
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-opus-5"
 

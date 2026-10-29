@@ -52,6 +52,18 @@ class AssistantNotifier extends StateNotifier<AssistantChatState> {
     }
   }
 
+  Future<void> retryLastMessage() async {
+    for (int i = state.history.length - 1; i >= 0; i--) {
+      final entry = state.history[i];
+      if (entry is ChatEntryUser) {
+        final filtered = state.history.where((e) => e is! ChatEntryError).toList();
+        state = state.copyWith(history: filtered);
+        await sendMessage(entry.message);
+        return;
+      }
+    }
+  }
+
   /// The backend's own message is used verbatim for `unavailable` (503) --
   /// e.g. "The assistant is temporarily unavailable. Please try again
   /// shortly." (core/errors.py's ServiceUnavailableError) -- rather than a

@@ -5,6 +5,7 @@ import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../domain/assistant_message.dart';
+import '../providers/assistant_providers.dart';
 import 'evidence_card.dart';
 
 /// Renders one turn of local-only chat history. A `switch` over
@@ -177,14 +178,18 @@ class _GroundingWarningBanner extends ConsumerWidget {
   }
 }
 
-class _ErrorBanner extends StatelessWidget {
+class _ErrorBanner extends ConsumerWidget {
   const _ErrorBanner({required this.message});
 
   final String message;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final isRetryable = message.contains('No connection') ||
+        message.contains('unavailable') ||
+        message.contains('went wrong');
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -193,11 +198,36 @@ class _ErrorBanner extends StatelessWidget {
         color: scheme.errorContainer,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline, size: AppSpacing.iconSm, color: scheme.onErrorContainer),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(message, style: TextStyle(color: scheme.onErrorContainer))),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(Icons.error_outline, size: AppSpacing.iconSm, color: scheme.onErrorContainer),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: scheme.onErrorContainer),
+                ),
+              ),
+            ],
+          ),
+          if (isRetryable) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonalIcon(
+                onPressed: () => ref.read(assistantNotifierProvider.notifier).retryLastMessage(),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Retry Send'),
+              ),
+            ),
+          ],
         ],
       ),
     );

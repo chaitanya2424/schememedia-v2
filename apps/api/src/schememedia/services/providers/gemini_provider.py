@@ -37,7 +37,8 @@ from google.genai import types
 
 from schememedia.services.providers.base import ToolCall
 
-DEFAULT_MODEL = "gemini-3.6-flash"
+DEFAULT_MODEL = "gemini-3.5-flash"
+FALLBACK_MODELS = ("gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash")
 
 # Audit finding H1: an unconfigured client has no request timeout at all.
 # The assistant route runs both provider calls inside one
@@ -91,26 +92,46 @@ class GeminiProvider:
             ]
         )
 
+    def _run_with_model_fallback(self, operation: Any) -> Any:
+        models = [self._model] + [m for m in FALLBACK_MODELS if m != self._model]
+        last_error: Exception | None = None
+        for m in models:
+            try:
+                result = operation(m)
+                self._model = m
+                return result
+            except Exception as exc:
+                last_error = exc
+                err_str = str(exc)
+                if any(code in err_str for code in ("503", "404", "429", "UNAVAILABLE", "NOT_FOUND")):
+                    continue
+                raise
+        if last_error:
+            raise last_error
+
     def call_with_forced_tool(
         self, *, system_prompt: str, user_message: str, tool: dict[str, Any]
     ) -> ToolCall:
-        response = self._client.models.generate_content(
-            model=self._model,
-            contents=user_message,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                tools=[self._tool(tool)],
-                tool_config=types.ToolConfig(
-                    function_calling_config=types.FunctionCallingConfig(
-                        mode=types.FunctionCallingConfigMode.ANY,
-                        allowed_function_names=[tool["name"]],
-                    )
+        def _call(model_name: str) -> Any:
+            return self._client.models.generate_content(
+                model=model_name,
+                contents=user_message,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    tools=[self._tool(tool)],
+                    tool_config=types.ToolConfig(
+                        function_calling_config=types.FunctionCallingConfig(
+                            mode=types.FunctionCallingConfigMode.ANY,
+                            allowed_function_names=[tool["name"]],
+                        )
+                    ),
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        disable=True
+                    ),
                 ),
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                    disable=True
-                ),
-            ),
-        )
+            )
+
+        response = self._run_with_model_fallback(_call)
         calls = response.function_calls
         if not calls:
             raise RuntimeError(
@@ -178,9 +199,13 @@ class GeminiProvider:
             function_call_content,
             types.Content(role="user", parts=[function_response_part]),
         ]
-        response = self._client.models.generate_content(
-            model=self._model,
-            contents=contents,
-            config=types.GenerateContentConfig(system_instruction=system_prompt),
-        )
+
+        def _generate(model_name: str) -> Any:
+            return self._client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(system_instruction=system_prompt),
+            )
+
+        response = self._run_with_model_fallback(_generate)
         return response.text or ""
