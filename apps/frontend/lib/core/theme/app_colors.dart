@@ -65,32 +65,29 @@ class AppColors extends ThemeExtension<AppColors> {
     background: Color(0xFFF8F7F4),
     surface: Color(0xFFFFFFFF),
     surfaceMuted: Color(0xFFF1EFEA),
-    // A blue-leaning navy, not a neutral charcoal -- re-matched against
-    // the reference mockups' headline/hero-card/button ink, which reads
-    // distinctly blue, not grey-black.
-    textPrimary: Color(0xFF151A2E),
-    textSecondary: Color(0xFF5C6270),
-    textTertiary: Color(0xFF9BA1AC),
-    divider: Color(0xFFEAE7E1),
-    brand: Color(0xFFEA580C),
-    brandTint: Color(0x26EA580C),
-    primaryAction: Color(0xFF151A2E),
+    textPrimary: Color(0xFF0F172A),
+    textSecondary: Color(0xFF475569),
+    textTertiary: Color(0xFF64748B),
+    divider: Color(0xFFE2E8F0),
+    brand: Color(0xFFC2410C),
+    brandTint: Color(0x26C2410C),
+    primaryAction: Color(0xFF0F172A),
     onPrimaryAction: Colors.white,
-    shadow: Color(0xFF151A2E),
+    shadow: Color(0xFF0F172A),
   );
 
   static const dark = AppColors(
     background: Color(0xFF14171C),
     surface: Color(0xFF1D2128),
     surfaceMuted: Color(0xFF262B33),
-    textPrimary: Color(0xFFF1F2F4),
-    textSecondary: Color(0xFF9AA1AC),
-    textTertiary: Color(0xFF6B7280),
-    divider: Color(0xFF2A2F38),
-    brand: Color(0xFFF97316),
-    brandTint: Color(0x1AF97316),
-    primaryAction: Color(0xFFF97316),
-    onPrimaryAction: Colors.white,
+    textPrimary: Color(0xFFF8FAFC),
+    textSecondary: Color(0xFFCBD5E1),
+    textTertiary: Color(0xFF94A3B8),
+    divider: Color(0xFF334155),
+    brand: Color(0xFFFB923C),
+    brandTint: Color(0x24FB923C),
+    primaryAction: Color(0xFFFB923C),
+    onPrimaryAction: Color(0xFF0F172A),
     shadow: Color(0xFF000000),
   );
 

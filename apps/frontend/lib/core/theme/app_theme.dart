@@ -8,8 +8,8 @@ import 'app_status_colors.dart';
 /// Only used to derive `primary`/`primaryContainer`-family tonal
 /// relationships now; the neutral/surface tones below are hand-authored,
 /// not generated from this seed. See AppColors' doc comment for why.
-const _seedColorLight = Color(0xFFEA580C);
-const _seedColorDark = Color(0xFFF97316);
+const _seedColorLight = Color(0xFFC2410C);
+const _seedColorDark = Color(0xFFFB923C);
 
 abstract final class AppTheme {
   static ThemeData light() => _themeFrom(Brightness.light);

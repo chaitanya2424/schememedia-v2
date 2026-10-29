@@ -355,6 +355,11 @@ class _MatchingIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pillBg = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFF0FDF4);
+    final pillBorder = isDark ? const Color(0xFF059669).withValues(alpha: 0.45) : const Color(0xFF86EFAC);
+    final pillTextColor = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D);
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -363,19 +368,19 @@ class _MatchingIllustration extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
+              color: pillBg,
               borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-              border: Border.all(color: const Color(0xFF86EFAC)),
+              border: Border.all(color: pillBorder),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.currency_rupee_rounded, size: 16, color: Color(0xFF16A34A)),
-                SizedBox(width: 4),
+                Icon(Icons.currency_rupee_rounded, size: 16, color: pillTextColor),
+                const SizedBox(width: 4),
                 Text(
                   '₹6,000 / year • Guaranteed Support',
                   style: TextStyle(
-                    color: Color(0xFF15803D),
+                    color: pillTextColor,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -387,8 +392,9 @@ class _MatchingIllustration extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: colors.divider),
               boxShadow: [
                 BoxShadow(
                   color: colors.brand.withValues(alpha: 0.08),
@@ -402,24 +408,35 @@ class _MatchingIllustration extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: isDark ? const Color(0xFF065F46) : const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                   ),
-                  child: const Icon(Icons.agriculture_rounded, color: Color(0xFF2E7D32), size: 24),
+                  child: Icon(
+                    Icons.agriculture_rounded,
+                    color: isDark ? const Color(0xFF34D399) : const Color(0xFF2E7D32),
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'PM-Kisan Samman Nidhi',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
                       ),
                       Text(
                         'Central Sector • Direct Bank Transfer',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -427,13 +444,13 @@ class _MatchingIllustration extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
+                    color: isDark ? const Color(0xFF065F46).withValues(alpha: 0.4) : const Color(0xFFECFDF5),
                     borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
                   ),
-                  child: const Text(
+                  child: Text(
                     '98% Match',
                     style: TextStyle(
-                      color: Color(0xFF059669),
+                      color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669),
                       fontWeight: FontWeight.w700,
                       fontSize: 11,
                     ),
@@ -455,6 +472,9 @@ class _VerificationIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final badgeColor = isDark ? const Color(0xFF93C5FD) : const Color(0xFF1E3A8A);
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -462,8 +482,9 @@ class _VerificationIllustration extends StatelessWidget {
           width: 68,
           height: 68,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surface,
             shape: BoxShape.circle,
+            border: Border.all(color: colors.divider),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFF059669).withValues(alpha: 0.15),
@@ -472,27 +493,31 @@ class _VerificationIllustration extends StatelessWidget {
               ),
             ],
           ),
-          child: const Center(
-            child: Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 38),
+          child: Center(
+            child: Icon(
+              Icons.verified_rounded,
+              color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+              size: 38,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
+            border: Border.all(color: colors.divider),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.shield_outlined, size: 14, color: Color(0xFF1E3A8A)),
-              SizedBox(width: 6),
+              Icon(Icons.shield_outlined, size: 14, color: badgeColor),
+              const SizedBox(width: 6),
               Text(
                 '100% Verified from Ministry Gazettes',
                 style: TextStyle(
-                  color: Color(0xFF1E3A8A),
+                  color: badgeColor,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
@@ -512,6 +537,8 @@ class _AssistantIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -541,12 +568,13 @@ class _AssistantIllustration extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.surface,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(14),
                   topRight: Radius.circular(14),
                   bottomRight: Radius.circular(14),
                 ),
+                border: Border.all(color: colors.divider),
                 boxShadow: [
                   BoxShadow(
                     color: colors.brand.withValues(alpha: 0.08),
@@ -554,15 +582,19 @@ class _AssistantIllustration extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.auto_awesome, size: 14, color: Color(0xFF059669)),
-                  SizedBox(width: 6),
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 14,
+                    color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     'Yes, PM-KUSUM provides up to 60% grant.',
                     style: TextStyle(
-                      color: Color(0xFF0F172A),
+                      color: colors.textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),

@@ -369,14 +369,19 @@ class _DigiLockerDialogState extends ConsumerState<DigiLockerDialog> {
   }
 
   Widget _buildPreview(ThemeData theme, AppColors colors, AppStrings strings) {
+    final isDark = theme.brightness == Brightness.dark;
     final kyc = _previewData!['kyc_data'] as Map<String, dynamic>? ?? {};
     final maskedId = _previewData!['id_masked'] as String? ?? 'XXXX-XXXX-4829';
+
+    final bgTint = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFF0FDF4);
+    final borderTint = isDark ? const Color(0xFF059669).withValues(alpha: 0.5) : const Color(0xFF86EFAC);
+    final textTint = isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        border: Border.all(color: const Color(0xFF86EFAC)),
+        color: bgTint,
+        border: Border.all(color: borderTint),
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),
       child: Column(
@@ -384,49 +389,49 @@ class _DigiLockerDialogState extends ConsumerState<DigiLockerDialog> {
         children: [
           Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 22),
+              Icon(Icons.check_circle_rounded, color: textTint, size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   strings.isHindi ? 'सफलतापूर्वक सत्यापित (डिजीलॉकर/UIDAI)' : 'Verified Identity Authenticated',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF15803D),
+                    color: textTint,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Text(
                 maskedId,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D)),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textTint),
               ),
             ],
           ),
           const Divider(height: 18),
-          _fieldRow('Full Name', kyc['name'] ?? 'Citizen Name'),
-          _fieldRow('Age / DOB', '${kyc['age']} years (${kyc['dob'] ?? 'N/A'})'),
-          _fieldRow('Gender', kyc['gender'] ?? 'Female'),
-          _fieldRow('State / UT', '${kyc['state']} (${kyc['state_code']})'),
-          _fieldRow('Category', kyc['category'] ?? 'General'),
-          _fieldRow('Occupation', kyc['occupation'] ?? 'Agriculture'),
-          _fieldRow('Ration Card', kyc['ration_card_type'] ?? 'BPL'),
+          _fieldRow('Full Name', kyc['name'] ?? 'Citizen Name', colors),
+          _fieldRow('Age / DOB', '${kyc['age']} years (${kyc['dob'] ?? 'N/A'})', colors),
+          _fieldRow('Gender', kyc['gender'] ?? 'Female', colors),
+          _fieldRow('State / UT', '${kyc['state']} (${kyc['state_code']})', colors),
+          _fieldRow('Category', kyc['category'] ?? 'General', colors),
+          _fieldRow('Occupation', kyc['occupation'] ?? 'Agriculture', colors),
+          _fieldRow('Ration Card', kyc['ration_card_type'] ?? 'BPL', colors),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFFBBF7D0)),
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              border: Border.all(color: colors.divider),
             ),
             child: Row(
               children: [
-                const Icon(Icons.auto_awesome, color: Color(0xFF0F766E), size: 16),
+                Icon(Icons.auto_awesome, color: colors.brand, size: 16),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     strings.isHindi
                         ? 'ये सभी विवरण आपकी योजना पात्रता के लिए तुरंत स्वचालित रूप से भर दिए जाएंगे।'
                         : 'These attributes will be automatically populated into your eligibility profile.',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF14532D)),
+                    style: TextStyle(fontSize: 11.5, color: colors.textSecondary, fontWeight: FontWeight.w500),
                   ),
                 ),
               ],
@@ -437,14 +442,14 @@ class _DigiLockerDialogState extends ConsumerState<DigiLockerDialog> {
     );
   }
 
-  Widget _fieldRow(String label, String value) {
+  Widget _fieldRow(String label, String value, AppColors colors) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+          Text(label, style: TextStyle(fontSize: 12, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.textPrimary)),
         ],
       ),
     );

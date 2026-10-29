@@ -174,7 +174,8 @@ class _SignedOutHeader extends ConsumerWidget {
                 icon: const Icon(Icons.login_rounded),
                 label: Text(strings.signInOrCreate),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E3A8A),
+                  backgroundColor: colors.primaryAction,
+                  foregroundColor: colors.onPrimaryAction,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -315,8 +316,14 @@ class _ProfileCompletionCard extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF1E3A8A),
-                        side: const BorderSide(color: Color(0xFF1E3A8A)),
+                        foregroundColor: theme.brightness == Brightness.dark
+                            ? const Color(0xFF60A5FA)
+                            : const Color(0xFF1E3A8A),
+                        side: BorderSide(
+                          color: theme.brightness == Brightness.dark
+                              ? const Color(0xFF60A5FA).withValues(alpha: 0.5)
+                              : const Color(0xFF1E3A8A).withValues(alpha: 0.4),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 9),
                       ),
                       onPressed: () => ArchetypeSelectorDialog.show(
@@ -345,8 +352,14 @@ class _ProfileCompletionCard extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0F766E),
-                        side: const BorderSide(color: Color(0xFF0F766E)),
+                        foregroundColor: theme.brightness == Brightness.dark
+                            ? const Color(0xFF2DD4BF)
+                            : const Color(0xFF0F766E),
+                        side: BorderSide(
+                          color: theme.brightness == Brightness.dark
+                              ? const Color(0xFF2DD4BF).withValues(alpha: 0.5)
+                              : const Color(0xFF0F766E).withValues(alpha: 0.4),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 9),
                       ),
                       onPressed: () => context.go(AppRoutes.recommendations),
@@ -365,8 +378,14 @@ class _ProfileCompletionCard extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0F766E),
-                        side: const BorderSide(color: Color(0xFF0F766E)),
+                        foregroundColor: theme.brightness == Brightness.dark
+                            ? const Color(0xFF34D399)
+                            : const Color(0xFF0F766E),
+                        side: BorderSide(
+                          color: theme.brightness == Brightness.dark
+                              ? const Color(0xFF34D399).withValues(alpha: 0.5)
+                              : const Color(0xFF0F766E).withValues(alpha: 0.4),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 9),
                       ),
                       onPressed: () => DigiLockerDialog.show(
@@ -395,8 +414,14 @@ class _ProfileCompletionCard extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF2563EB),
-                        side: const BorderSide(color: Color(0xFF2563EB)),
+                        foregroundColor: theme.brightness == Brightness.dark
+                            ? const Color(0xFF818CF8)
+                            : const Color(0xFF2563EB),
+                        side: BorderSide(
+                          color: theme.brightness == Brightness.dark
+                              ? const Color(0xFF818CF8).withValues(alpha: 0.5)
+                              : const Color(0xFF2563EB).withValues(alpha: 0.4),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 9),
                       ),
                       onPressed: () => DocumentScannerDialog.show(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../domain/assistant_message.dart';
@@ -68,7 +69,7 @@ class _AssistantBubbleState extends ConsumerState<_AssistantBubble> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final colors = context.colors;
     final strings = ref.watch(stringsProvider);
     final turn = widget.turn;
     final hasWarnings = turn.groundingWarnings.isNotEmpty;
@@ -82,13 +83,20 @@ class _AssistantBubbleState extends ConsumerState<_AssistantBubble> {
           margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            color: colors.surface,
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            border: Border.all(color: colors.divider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(turn.reply),
+              Text(
+                turn.reply,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.textPrimary,
+                  height: 1.45,
+                ),
+              ),
               // Never swept under the rug: this is the system telling the
               // UI the reply may not be fully trustworthy, so it is always
               // visible, never behind an expand.
@@ -116,7 +124,7 @@ class _AssistantBubbleState extends ConsumerState<_AssistantBubble> {
                         : (strings.isHindi
                             ? '"${turn.evidence.query}" के लिए खोज की गई -- प्रोफ़ाइल विवरण के बिना अधिकांश पात्रता अस्पष्ट है।'
                             : 'Searched for "${turn.evidence.query}" -- no profile details yet, so eligibility below is mostly unknown.'),
-                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline),
+                    style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   for (final result in turn.evidence.results)
@@ -142,6 +150,7 @@ class _GroundingWarningBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     final strings = ref.watch(stringsProvider);
     final color = StatusColors.warning(theme.colorScheme);
     return Container(
@@ -162,12 +171,20 @@ class _GroundingWarningBanner extends ConsumerWidget {
               children: [
                 Text(
                   strings.replyAccuracyWarning,
-                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
                 ),
                 for (final warning in warnings)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Text('• $warning', style: theme.textTheme.bodySmall),
+                    child: Text(
+                      '• $warning',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
                   ),
               ],
             ),

@@ -368,40 +368,42 @@ class _QueryStep extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF1E3A8A).withValues(alpha: 0.05),
-                  const Color(0xFF0F766E).withValues(alpha: 0.05),
-                ],
-              ),
+              color: colors.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              border: Border.all(color: colors.divider),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.shadow.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.bolt_rounded, color: Color(0xFFD97706), size: 22),
+                    Icon(Icons.bolt_rounded, color: colors.brand, size: 22),
                     const SizedBox(width: 6),
                     Text(
                       isHindi ? '1-क्लिक नागरिक प्रोफाइल (त्वरित चयन)' : '1-Tap Citizen Profiles (Instant Match)',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1E3A8A),
+                        color: colors.textPrimary,
                       ),
                     ),
                     const Spacer(),
                     if (autoFillSource != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: const Color(0xFF16A34A).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
                         ),
                         child: Text(
                           '✓ $autoFillSource',
-                          style: const TextStyle(color: Color(0xFF16A34A), fontSize: 10, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: Color(0xFF16A34A), fontSize: 10.5, fontWeight: FontWeight.bold),
                         ),
                       ),
                   ],
@@ -411,7 +413,7 @@ class _QueryStep extends ConsumerWidget {
                   isHindi
                       ? 'किसी भी कार्ड पर टैप करके तुरंत अपनी प्रोफ़ाइल प्री-फिल करें (कोई दस्तावेज़ स्कैनिंग नहीं)।'
                       : 'Tap any archetype below to instantly pre-fill your profile (no documents or camera needed).',
-                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF334155), fontSize: 11.5),
+                  style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary, fontSize: 11.5),
                 ),
                 const SizedBox(height: AppSpacing.md),
 
@@ -424,16 +426,17 @@ class _QueryStep extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (context, i) {
                       final item = citizenArchetypes[i];
+                      final isDark = theme.brightness == Brightness.dark;
                       return Container(
                         width: 230,
                         padding: const EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: colors.surface,
                           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                          border: Border.all(color: item.accentColor.withValues(alpha: 0.3)),
+                          border: Border.all(color: item.accentColor.withValues(alpha: isDark ? 0.4 : 0.25)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
+                              color: colors.shadow.withValues(alpha: isDark ? 0.2 : 0.04),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -447,7 +450,7 @@ class _QueryStep extends ConsumerWidget {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: item.accentColor.withValues(alpha: 0.12),
+                                    color: item.accentColor.withValues(alpha: isDark ? 0.25 : 0.12),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(item.icon, color: item.accentColor, size: 16),
@@ -458,7 +461,11 @@ class _QueryStep extends ConsumerWidget {
                                     item.title(isHindi),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                      color: colors.textPrimary,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -476,8 +483,8 @@ class _QueryStep extends ConsumerWidget {
                                 Expanded(
                                   child: FilledButton.tonal(
                                     style: FilledButton.styleFrom(
-                                      backgroundColor: item.accentColor.withValues(alpha: 0.12),
-                                      foregroundColor: item.accentColor,
+                                      backgroundColor: item.accentColor.withValues(alpha: isDark ? 0.25 : 0.12),
+                                      foregroundColor: isDark ? item.accentColor : item.accentColor,
                                       padding: const EdgeInsets.symmetric(vertical: 4),
                                       minimumSize: Size.zero,
                                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -503,8 +510,14 @@ class _QueryStep extends ConsumerWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF0F766E),
-                          side: const BorderSide(color: Color(0xFF0F766E)),
+                          foregroundColor: theme.brightness == Brightness.dark
+                              ? const Color(0xFF2DD4BF)
+                              : const Color(0xFF0F766E),
+                          side: BorderSide(
+                            color: theme.brightness == Brightness.dark
+                                ? const Color(0xFF2DD4BF).withValues(alpha: 0.5)
+                                : const Color(0xFF0F766E).withValues(alpha: 0.4),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 9),
                         ),
                         onPressed: onOpenDigiLocker,
@@ -519,8 +532,14 @@ class _QueryStep extends ConsumerWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF2563EB),
-                          side: const BorderSide(color: Color(0xFF2563EB)),
+                          foregroundColor: theme.brightness == Brightness.dark
+                              ? const Color(0xFF60A5FA)
+                              : const Color(0xFF2563EB),
+                          side: BorderSide(
+                            color: theme.brightness == Brightness.dark
+                                ? const Color(0xFF60A5FA).withValues(alpha: 0.5)
+                                : const Color(0xFF2563EB).withValues(alpha: 0.4),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 9),
                         ),
                         onPressed: onOpenDocScanner,

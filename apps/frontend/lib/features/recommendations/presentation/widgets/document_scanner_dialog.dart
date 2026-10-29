@@ -362,15 +362,20 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
   }
 
   Widget _buildResultView(ThemeData theme, AppColors colors, AppStrings strings) {
+    final isDark = theme.brightness == Brightness.dark;
     final fields = _scanResult!['extracted_fields'] as Map<String, dynamic>? ?? {};
     final title = _scanResult!['document_title'] as String? ?? 'Aadhaar Card';
     final confidence = ((_scanResult!['confidence'] as num? ?? 0.9) * 100).toInt();
 
+    final bgTint = isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.25) : const Color(0xFFEFF6FF);
+    final borderTint = isDark ? const Color(0xFF2563EB).withValues(alpha: 0.5) : const Color(0xFF93C5FD);
+    final textTint = isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8);
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        border: Border.all(color: const Color(0xFF93C5FD)),
+        color: bgTint,
+        border: Border.all(color: borderTint),
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),
       child: Column(
@@ -378,7 +383,7 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: Color(0xFF2563EB), size: 22),
+              Icon(Icons.auto_awesome, color: textTint, size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -387,13 +392,17 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
                     Text(
                       title,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFF1D4ED8),
+                        color: textTint,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
                       'AI OCR Confidence: $confidence%',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF3B82F6), fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -401,7 +410,7 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
+                  color: isDark ? const Color(0xFF2563EB) : const Color(0xFF1E3A8A),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -412,29 +421,29 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
             ],
           ),
           const Divider(height: 18),
-          _fieldRow('Full Name', fields['name'] ?? 'Citizen Name'),
-          _fieldRow('Age / DOB', '${fields['age'] ?? '30'} years (${fields['dob'] ?? 'N/A'})'),
-          _fieldRow('Gender', fields['gender'] ?? 'Female'),
-          _fieldRow('State / UT', '${fields['state'] ?? 'Maharashtra'} (${fields['state_code'] ?? 'MH'})'),
-          if (fields['address_type'] != null) _fieldRow('Area Type', fields['address_type']!),
+          _fieldRow('Full Name', fields['name'] ?? 'Citizen Name', colors),
+          _fieldRow('Age / DOB', '${fields['age'] ?? '30'} years (${fields['dob'] ?? 'N/A'})', colors),
+          _fieldRow('Gender', fields['gender'] ?? 'Female', colors),
+          _fieldRow('State / UT', '${fields['state'] ?? 'Maharashtra'} (${fields['state_code'] ?? 'MH'})', colors),
+          if (fields['address_type'] != null) _fieldRow('Area Type', fields['address_type']!, colors),
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              border: Border.all(color: colors.divider),
             ),
             child: Row(
               children: [
-                const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF2563EB), size: 16),
+                Icon(Icons.check_circle_outline_rounded, color: textTint, size: 16),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     strings.isHindi
                         ? 'पहचाने गए सभी मान आपकी प्रोफाइल में अपडेट कर दिए जाएंगे।'
                         : 'Extracted attributes ready to auto-populate your eligibility profile.',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF1E40AF)),
+                    style: TextStyle(fontSize: 11.5, color: colors.textSecondary, fontWeight: FontWeight.w500),
                   ),
                 ),
               ],
@@ -445,14 +454,14 @@ class _DocumentScannerDialogState extends ConsumerState<DocumentScannerDialog> {
     );
   }
 
-  Widget _fieldRow(String label, String value) {
+  Widget _fieldRow(String label, String value, AppColors colors) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+          Text(label, style: TextStyle(fontSize: 12, color: colors.textSecondary, fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.textPrimary)),
         ],
       ),
     );

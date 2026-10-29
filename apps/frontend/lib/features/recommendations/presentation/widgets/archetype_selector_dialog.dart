@@ -48,10 +48,10 @@ class ArchetypeSelectorDialog extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E3A8A).withValues(alpha: 0.12),
+                      color: colors.brandTint,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: Color(0xFF1E3A8A), size: 26),
+                    child: Icon(Icons.bolt_rounded, color: colors.brand, size: 26),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -62,7 +62,7 @@ class ArchetypeSelectorDialog extends ConsumerWidget {
                           isHindi ? '1-क्लिक नागरिक प्रोफाइल' : '1-Tap Citizen Profiles',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F172A),
+                            color: colors.textPrimary,
                           ),
                         ),
                         Text(
@@ -126,7 +126,7 @@ class ArchetypeSelectorDialog extends ConsumerWidget {
                                         item.title(isHindi),
                                         style: theme.textTheme.titleSmall?.copyWith(
                                           fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF1E293B),
+                                          color: colors.textPrimary,
                                         ),
                                       ),
                                       Text(
@@ -142,7 +142,7 @@ class ArchetypeSelectorDialog extends ConsumerWidget {
                                 const SizedBox(width: AppSpacing.xs),
                                 FilledButton.tonal(
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: item.accentColor.withValues(alpha: 0.12),
+                                    backgroundColor: item.accentColor.withValues(alpha: 0.15),
                                     foregroundColor: item.accentColor,
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                     minimumSize: Size.zero,
@@ -168,16 +168,16 @@ class ArchetypeSelectorDialog extends ConsumerWidget {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: colors.surface,
                                       borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                      border: Border.all(color: colors.divider),
                                     ),
                                     child: Text(
                                       chip,
                                       style: TextStyle(
                                         fontSize: 10.5,
                                         color: colors.textSecondary,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),

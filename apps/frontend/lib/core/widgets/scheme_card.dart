@@ -254,7 +254,10 @@ class _CategoryIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final (icon, iconColor, bgColor) = _styleForCategory(category, colors);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final (icon, iconColor, lightBgColor) = _styleForCategory(category, colors);
+    final bgColor = isDark ? iconColor.withValues(alpha: 0.22) : lightBgColor;
+    final effectiveIconColor = isDark ? _brightenForDark(iconColor) : iconColor;
 
     return Container(
       width: 44,
@@ -262,10 +265,24 @@ class _CategoryIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: iconColor.withValues(alpha: 0.15)),
+        border: Border.all(color: effectiveIconColor.withValues(alpha: isDark ? 0.35 : 0.15)),
       ),
-      child: Icon(icon, color: iconColor, size: AppSpacing.iconMd),
+      child: Icon(icon, color: effectiveIconColor, size: AppSpacing.iconMd),
     );
+  }
+
+  static Color _brightenForDark(Color color) {
+    if (color == const Color(0xFF059669)) return const Color(0xFF34D399); // emerald-400
+    if (color == const Color(0xFFE11D48)) return const Color(0xFFFB7185); // rose-400
+    if (color == const Color(0xFF2563EB)) return const Color(0xFF60A5FA); // blue-400
+    if (color == const Color(0xFFD97706)) return const Color(0xFFFBBF24); // amber-400
+    if (color == const Color(0xFF0D9488)) return const Color(0xFF2DD4BF); // teal-400
+    if (color == const Color(0xFF7C3AED)) return const Color(0xFFA78BFA); // violet-400
+    if (color == const Color(0xFF4F46E5)) return const Color(0xFF818CF8); // indigo-400
+    if (color == const Color(0xFF0284C7)) return const Color(0xFF38BDF8); // sky-400
+    if (color == const Color(0xFF16A34A)) return const Color(0xFF4ADE80); // green-400
+    if (color == const Color(0xFF475569)) return const Color(0xFF94A3B8); // slate-400
+    return color;
   }
 
   static (IconData, Color, Color) _styleForCategory(String? category, AppColors colors) {
@@ -337,13 +354,21 @@ class _BenefitBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFF0FDF4);
+    final borderColor = isDark ? const Color(0xFF059669).withValues(alpha: 0.45) : const Color(0xFF86EFAC).withValues(alpha: 0.7);
+    final circleBg = isDark ? const Color(0xFF065F46) : const Color(0xFFDCFCE7);
+    final circleIconColor = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D);
+    final labelColor = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D);
+    final valueColor = isDark ? const Color(0xFFECFDF5) : const Color(0xFF14532D);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: const Color(0xFF86EFAC).withValues(alpha: 0.7)),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -351,10 +376,10 @@ class _BenefitBox extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
+              color: circleBg,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.currency_rupee, size: 16, color: Color(0xFF15803D)),
+            child: Icon(Icons.currency_rupee, size: 16, color: circleIconColor),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -364,7 +389,7 @@ class _BenefitBox extends StatelessWidget {
                 Text(
                   highlight.label.toUpperCase(),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF15803D),
+                    color: labelColor,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                   ),
@@ -373,7 +398,7 @@ class _BenefitBox extends StatelessWidget {
                   highlight.value,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF14532D),
+                    color: valueColor,
                   ),
                 ),
               ],
