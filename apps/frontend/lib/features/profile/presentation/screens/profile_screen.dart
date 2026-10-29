@@ -12,6 +12,8 @@ import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../auth/domain/auth_models.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../recommendations/domain/citizen_archetype.dart';
+import '../../../recommendations/presentation/widgets/archetype_selector_dialog.dart';
 import '../../../recommendations/presentation/widgets/digilocker_dialog.dart';
 import '../../../recommendations/presentation/widgets/document_scanner_dialog.dart';
 import '../providers/profile_providers.dart';
@@ -313,9 +315,59 @@ class _ProfileCompletionCard extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1E3A8A),
+                        side: const BorderSide(color: Color(0xFF1E3A8A)),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                      ),
+                      onPressed: () => ArchetypeSelectorDialog.show(
+                        context,
+                        onArchetypeSelected: (CitizenArchetype archetype) async {
+                          await ref.read(profileRepositoryProvider).updateProfile(archetype.attributes);
+                          ref.invalidate(myProfileProvider);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('✓ ${archetype.title(strings.isHindi)} loaded!'),
+                                backgroundColor: const Color(0xFF16A34A),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      icon: const Icon(Icons.bolt_rounded, size: 18),
+                      label: Text(
+                        strings.oneTapPresets,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF0F766E),
                         side: const BorderSide(color: Color(0xFF0F766E)),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                      ),
+                      onPressed: () => context.go(AppRoutes.recommendations),
+                      icon: const Icon(Icons.quiz_outlined, size: 18),
+                      label: Text(
+                        strings.quickQuiz,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF0F766E),
+                        side: const BorderSide(color: Color(0xFF0F766E)),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
                       ),
                       onPressed: () => DigiLockerDialog.show(
                         context,
@@ -345,7 +397,7 @@ class _ProfileCompletionCard extends ConsumerWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF2563EB),
                         side: const BorderSide(color: Color(0xFF2563EB)),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
                       ),
                       onPressed: () => DocumentScannerDialog.show(
                         context,

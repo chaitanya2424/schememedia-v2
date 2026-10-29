@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
+import '../../domain/citizen_archetype.dart';
 import '../../domain/eligibility_attribute.dart';
 import '../../domain/indian_states.dart';
 import '../providers/profile_form_provider.dart';
@@ -127,6 +128,30 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
     ref.read(recommendationsNotifierProvider.notifier).fetch(query: query, profile: profile);
   }
 
+  void _applyArchetype(CitizenArchetype archetype) {
+    final strings = ref.read(stringsProvider);
+    final isHindi = strings.isHindi;
+    final controller = ref.read(profileFormControllerProvider);
+    controller.loadFrom(archetype.attributes);
+    setState(() {
+      _autoFillSource = archetype.title(isHindi);
+      if (_queryController.text.trim().isEmpty) {
+        _queryController.text = archetype.suggestedQuery;
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✓ ${archetype.title(isHindi)} loaded! You can customize in the next steps.'),
+        backgroundColor: const Color(0xFF16A34A),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    // Immediately advance to Step 1 (Demographics) so user sees the populated fields
+    _goTo(1);
+  }
+
   void _applyAttributes(Map<String, dynamic> attributes, String sourceLabel) {
     final controller = ref.read(profileFormControllerProvider);
     controller.loadFrom(attributes);
@@ -186,6 +211,7 @@ class _RecommendationsWizardState extends ConsumerState<RecommendationsWizard> {
                   error: _queryError,
                   autoFillSource: _autoFillSource,
                   onSubmit: _submitFromQuery,
+                  onSelectArchetype: _applyArchetype,
                   onOpenDigiLocker: () => DigiLockerDialog.show(
                     context,
                     onDataFetched: (attrs, kyc) => _applyAttributes(attrs, 'DigiLocker / UIDAI'),
@@ -287,6 +313,7 @@ class _QueryStep extends ConsumerWidget {
     required this.error,
     required this.autoFillSource,
     required this.onSubmit,
+    required this.onSelectArchetype,
     required this.onOpenDigiLocker,
     required this.onOpenDocScanner,
   });
@@ -295,6 +322,7 @@ class _QueryStep extends ConsumerWidget {
   final String? error;
   final String? autoFillSource;
   final VoidCallback onSubmit;
+  final void Function(CitizenArchetype archetype) onSelectArchetype;
   final VoidCallback onOpenDigiLocker;
   final VoidCallback onOpenDocScanner;
 
@@ -311,6 +339,7 @@ class _QueryStep extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = context.colors;
     final strings = ref.watch(stringsProvider);
+    final isHindi = strings.isHindi;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -320,7 +349,7 @@ class _QueryStep extends ConsumerWidget {
           const EyebrowLabel('PERSONALIZED ELIGIBILITY WIZARD'),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            strings.isHindi ? 'आप किस प्रकार की योजना खोज रहे हैं?' : 'What schemes are you looking for?',
+            isHindi ? 'अपनी पात्रता जांचें या 1-क्लिक प्रोफाइल चुनें' : 'Check Eligibility or Choose a 1-Tap Profile',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
@@ -328,35 +357,35 @@ class _QueryStep extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            strings.isHindi
-                ? 'स्मार्ट प्रोफ़ाइल या फ़ास्ट-वेरिफाई से तुरंत अनुकूल योजनाएं खोजें।'
-                : 'Complete your profile or fast-fill with DigiLocker to see schemes matched to you.',
+            isHindi
+                ? '30 सेकंड का क्विज़ भरें या अपनी स्थिति से मेल खाने वाला प्रोफाइल चुनें।'
+                : 'Select an instant citizen profile below, or start the 30-sec express quiz.',
             style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // FAST-FILL HERO BAR
+          // 1-TAP ARCHETYPE PRESETS SECTION
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF0F766E).withValues(alpha: 0.08),
-                  const Color(0xFF2563EB).withValues(alpha: 0.08),
+                  const Color(0xFF1E3A8A).withValues(alpha: 0.05),
+                  const Color(0xFF0F766E).withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-              border: Border.all(color: const Color(0xFF93C5FD)),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.flash_on_rounded, color: Color(0xFFD97706), size: 20),
+                    const Icon(Icons.bolt_rounded, color: Color(0xFFD97706), size: 22),
                     const SizedBox(width: 6),
                     Text(
-                      strings.isHindi ? '1-क्लिक फास्ट-वेरिफिकेशन' : '1-Click Instant Fast-Fill Options',
+                      isHindi ? '1-क्लिक नागरिक प्रोफाइल (त्वरित चयन)' : '1-Tap Citizen Profiles (Instant Match)',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF1E3A8A),
@@ -377,12 +406,96 @@ class _QueryStep extends ConsumerWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
-                  strings.isHindi
-                      ? 'डिजिलॉकर से सीधे सरकारी रिकॉर्ड लाएं या आधार/दस्तावेज़ की फोटो स्कैन करें।'
-                      : 'Connect with DigiLocker or scan Aadhaar card photo to auto-fill verified details.',
-                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF334155)),
+                  isHindi
+                      ? 'किसी भी कार्ड पर टैप करके तुरंत अपनी प्रोफ़ाइल प्री-फिल करें (कोई दस्तावेज़ स्कैनिंग नहीं)।'
+                      : 'Tap any archetype below to instantly pre-fill your profile (no documents or camera needed).',
+                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF334155), fontSize: 11.5),
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Archetype Cards Horizontal List
+                SizedBox(
+                  height: 148,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: citizenArchetypes.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+                    itemBuilder: (context, i) {
+                      final item = citizenArchetypes[i];
+                      return Container(
+                        width: 230,
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                          border: Border.all(color: item.accentColor.withValues(alpha: 0.3)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: item.accentColor.withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(item.icon, color: item.accentColor, size: 16),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    item.title(isHindi),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.subtitle(isHindi),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: colors.textSecondary, fontSize: 11, height: 1.2),
+                            ),
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FilledButton.tonal(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: item.accentColor.withValues(alpha: 0.12),
+                                      foregroundColor: item.accentColor,
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    onPressed: () => onSelectArchetype(item),
+                                    child: Text(
+                                      isHindi ? 'लागू करें' : 'Apply ⚡',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Row(
@@ -392,13 +505,13 @@ class _QueryStep extends ConsumerWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF0F766E),
                           side: const BorderSide(color: Color(0xFF0F766E)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(vertical: 9),
                         ),
                         onPressed: onOpenDigiLocker,
                         icon: const Icon(Icons.verified_user_rounded, size: 16),
                         label: Text(
-                          strings.isHindi ? 'डिजिलॉकर कनेक्ट' : 'DigiLocker',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          isHindi ? 'डिजिलॉकर कनेक्ट' : 'DigiLocker Fast-Verify',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
                     ),
@@ -408,13 +521,13 @@ class _QueryStep extends ConsumerWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF2563EB),
                           side: const BorderSide(color: Color(0xFF2563EB)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(vertical: 9),
                         ),
                         onPressed: onOpenDocScanner,
                         icon: const Icon(Icons.document_scanner_rounded, size: 16),
                         label: Text(
-                          strings.isHindi ? 'आधार स्कैन' : 'Scan Aadhaar',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          isHindi ? 'आधार स्कैन (AI OCR)' : 'Scan Aadhaar (AI OCR)',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
                     ),
@@ -425,19 +538,25 @@ class _QueryStep extends ConsumerWidget {
           ),
 
           const SizedBox(height: AppSpacing.lg),
+          Text(
+            isHindi ? 'या विशिष्ट योजना / कीवर्ड खोजें (वैकल्पिक)' : 'Or search by specific scheme / keyword (Optional)',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          const SizedBox(height: AppSpacing.xs),
           TextField(
             key: const ValueKey('recommendations_query_field'),
             controller: controller,
             decoration: InputDecoration(
-              hintText: strings.isHindi ? 'उदा. किसान सब्सिडी, छात्रवृत्ति' : 'e.g. farmer subsidy, scholarship',
+              hintText: isHindi ? 'उदा. किसान सब्सिडी, छात्रवृत्ति, आवास' : 'e.g. farmer subsidy, scholarship, housing',
               errorText: error,
               prefixIcon: const Icon(Icons.search_rounded),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => onSubmit(),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -453,14 +572,14 @@ class _QueryStep extends ConsumerWidget {
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.lg),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               key: const ValueKey('recommendations_wizard_continue_button'),
               onPressed: onSubmit,
               icon: const Icon(Icons.arrow_forward_rounded),
-              label: Text(strings.isHindi ? 'आगे बढ़ें: प्रोफ़ाइल भरें' : 'Continue to Smart Profile'),
+              label: Text(isHindi ? '30-सेकंड एक्सप्रेस क्विज़ शुरू करें' : 'Start 30-Sec Express Quiz'),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF1E3A8A),
                 padding: const EdgeInsets.symmetric(vertical: 14),

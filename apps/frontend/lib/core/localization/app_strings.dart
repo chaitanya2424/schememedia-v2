@@ -248,6 +248,13 @@ class AppStrings {
   String get languageLabel => isHindi ? 'भाषा' : 'Language';
   String get appearanceLabel => isHindi ? 'दिखावट' : 'Appearance';
 
+  // Archetypes & Express Profile Setup
+  String get oneTapProfiles => isHindi ? '1-क्लिक नागरिक प्रोफाइल' : '1-Tap Citizen Profiles';
+  String get oneTapPresets => isHindi ? '1-क्लिक प्रोफाइल' : '1-Tap Profiles';
+  String get quickQuiz => isHindi ? '30-सेकंड क्विज़' : '30-Sec Quiz';
+  String get expressProfileSetup =>
+      isHindi ? 'त्वरित 30-सेकंड प्रोफ़ाइल' : '30-Sec Express Profile';
+
   // Common UI
   String get continueText => isHindi ? 'आगे बढ़ें' : 'Continue';
   String get getStarted => isHindi ? 'शुरू करें' : 'Get started';
