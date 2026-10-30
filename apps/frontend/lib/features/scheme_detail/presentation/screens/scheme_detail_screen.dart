@@ -216,7 +216,7 @@ class _PrimaryColumn extends ConsumerWidget {
               color: theme.brightness == Brightness.dark
                   ? const Color(0xFF064E3B).withValues(alpha: 0.35)
                   : const Color(0xFF065F46).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
               border: Border.all(
                 color: theme.brightness == Brightness.dark
                     ? const Color(0xFF059669).withValues(alpha: 0.45)
@@ -231,12 +231,17 @@ class _PrimaryColumn extends ConsumerWidget {
                   size: 14,
                   color: theme.brightness == Brightness.dark ? const Color(0xFF34D399) : const Color(0xFF059669),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  strings.isHindi ? 'ऑफ़लाइन उपलब्ध · आपकी प्रोफ़ाइल में सहेजा गया' : 'Saved for Offline · Ready Without Internet',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.brightness == Brightness.dark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    strings.offlineReady,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.brightness == Brightness.dark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ],

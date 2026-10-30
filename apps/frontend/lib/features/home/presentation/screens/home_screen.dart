@@ -105,56 +105,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final mainColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- 1. Gov-Tech Header & Live Badge ---
+        // --- 1. Clean Title with Verified National Portal Badge ---
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: colors.brandTint,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                border: Border.all(color: colors.brand.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                border: Border.all(color: colors.brand.withValues(alpha: 0.25)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.verified, size: 14, color: colors.brand),
+                  Icon(Icons.verified, size: 13, color: colors.brand),
                   const SizedBox(width: 4),
                   Text(
                     strings.nationalWelfarePortal.toUpperCase(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colors.brand,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
+                      fontSize: 10,
+                      letterSpacing: 0.6,
                     ),
                   ),
                 ],
               ),
             ),
-            const Spacer(),
-            const LanguageToggleButton(),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.xs),
 
-        // --- 2. Title & Value Proposition ---
+        // --- 2. Title ---
         Text(
           strings.heroTitle,
-          style: theme.textTheme.headlineMedium?.copyWith(
+          style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
             color: colors.textPrimary,
-            letterSpacing: -0.5,
+            letterSpacing: -0.4,
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          strings.heroSubtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colors.textSecondary,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
 
         // --- 3. Modern Search Bar with Elevated Action Button ---
         Container(
@@ -543,7 +534,7 @@ class _HeroCard extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: const Color(0xFF065F46).withValues(alpha: 0.35),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
               ),
               child: Row(
@@ -551,49 +542,35 @@ class _HeroCard extends ConsumerWidget {
                 children: [
                   const Icon(Icons.offline_pin, size: 14, color: Color(0xFF34D399)),
                   const SizedBox(width: 6),
-                  Text(
-                    '${strings.offlinePocketTitle} · ${ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ?? (strings.isHindi ? 'नागरिक' : 'Citizen')} (${strings.offlineReady})',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFF6EE7B7),
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      '${strings.offlineReady} · ${ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ?? (strings.isHindi ? 'नागरिक' : 'Citizen')}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: const Color(0xFF6EE7B7),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFEA580C),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  ),
-                ),
-                onPressed: () => context.go(AppRoutes.recommendations),
-                icon: const Icon(Icons.arrow_forward, size: 18),
-                label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEA580C),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  ),
-                ),
-                onPressed: () => context.go(AppRoutes.assistant),
-                icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                label: Text(strings.isHindi ? 'सहायक से पूछें' : 'Ask Assistant'),
-              ),
-            ],
+            ),
+            onPressed: () => context.go(AppRoutes.recommendations),
+            icon: const Icon(Icons.arrow_forward, size: 17),
+            label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),

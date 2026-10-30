@@ -174,22 +174,22 @@ class SchemeCard extends ConsumerWidget {
             ],
           ),
           if (description != null && description!.trim().isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 6),
             Text(
               description!,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
-                height: 1.4,
+                height: 1.3,
               ),
             ),
           ],
           if (benefitHighlight != null) ...[
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
             _BenefitBox(highlight: benefitHighlight!),
           ],
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.xs,
@@ -212,6 +212,8 @@ class SchemeCard extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Text(
                         strings.offlineReady,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: const Color(0xFF047857),
                           fontWeight: FontWeight.w600,

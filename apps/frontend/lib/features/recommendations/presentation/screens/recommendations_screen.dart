@@ -173,8 +173,6 @@ class _WhyTheseMatchesBanner extends ConsumerWidget {
     final theme = Theme.of(context);
     final strings = ref.watch(stringsProvider);
     final isOffline = ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable;
-    final cachedLabel = ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ??
-        (strings.isHindi ? 'नागरिक' : 'Citizen');
     final passLabels = response.recommendations
         .expand((r) => r.eligibilityRules)
         .where((r) => r.state.name == 'pass')
@@ -242,7 +240,9 @@ class _WhyTheseMatchesBanner extends ConsumerWidget {
                             Icon(Icons.offline_pin, size: 12, color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669)),
                             const SizedBox(width: 3),
                             Text(
-                              '${strings.offlineReady} · $cachedLabel',
+                              strings.offlineReady,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
