@@ -99,13 +99,14 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: context.colors.brandTint,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              child: Image.asset(
+                'assets/images/app_logo.png',
+                width: 26,
+                height: 26,
+                fit: BoxFit.cover,
               ),
-              child: Icon(Icons.account_balance, color: context.colors.brand, size: 20),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(strings.exploreTitle, style: const TextStyle(fontWeight: FontWeight.w700)),

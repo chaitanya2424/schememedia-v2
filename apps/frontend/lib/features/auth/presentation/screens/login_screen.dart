@@ -116,13 +116,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: colors.brand,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              child: Image.asset(
+                'assets/images/app_logo.png',
+                width: 24,
+                height: 24,
+                fit: BoxFit.cover,
               ),
-              child: const Icon(Icons.account_balance, color: Colors.white, size: 16),
             ),
             const SizedBox(width: AppSpacing.sm),
             const Text(

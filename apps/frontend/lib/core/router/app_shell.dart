@@ -64,20 +64,14 @@ class AppShell extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colors.brand,
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.brand.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                        child: Image.asset(
+                          'assets/images/app_logo.png',
+                          width: 36,
+                          height: 36,
+                          fit: BoxFit.cover,
                         ),
-                        child: const Icon(Icons.account_balance, color: Colors.white, size: 22),
                       ),
                       const SizedBox(height: 6),
                       Text(

@@ -411,13 +411,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         appBar: AppBar(
           title: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: colors.brandTint,
-                  borderRadius: BorderRadius.circular(8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 26,
+                  height: 26,
+                  fit: BoxFit.cover,
                 ),
-                child: Icon(Icons.account_balance, size: 20, color: colors.brand),
               ),
               const SizedBox(width: 10),
               const Text('SchemeMedia'),
@@ -452,13 +453,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: colors.brandTint,
-                borderRadius: BorderRadius.circular(8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/images/app_logo.png',
+                width: 26,
+                height: 26,
+                fit: BoxFit.cover,
               ),
-              child: Icon(Icons.account_balance, size: 20, color: colors.brand),
             ),
             const SizedBox(width: 10),
             const Text('SchemeMedia'),

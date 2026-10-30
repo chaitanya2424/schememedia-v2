@@ -10,7 +10,7 @@
          merge that release builds do not inherit from debug/profile). -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="schememedia_app"
+        android:label="SchemeMedia"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
