@@ -39,7 +39,7 @@ abstract final class AppTheme {
       outline: colors.textTertiary,
       outlineVariant: colors.divider,
       primary: colors.brand,
-      onPrimary: Colors.white,
+      onPrimary: colors.onPrimaryAction,
       primaryContainer: colors.brandTint,
       onPrimaryContainer: colors.brand,
       // M3's automatic elevation surfaceTint would otherwise wash a warm
@@ -191,11 +191,13 @@ abstract final class AppTheme {
         style: IconButton.styleFrom(minimumSize: buttonMinimumSize),
       ),
 
-      // No border -- a tinted fill + icon + text is enough signal on its
-      // own (StatusPill, TriStateAnswer's Yes/No choices).
+      // Chip theme with adaptive selected colors and accessible contrast
       chipTheme: ChipThemeData(
-        labelStyle: textTheme.labelLarge,
+        labelStyle: textTheme.labelLarge?.copyWith(color: colors.textPrimary),
+        secondaryLabelStyle: textTheme.labelLarge?.copyWith(color: colors.onPrimaryAction),
         backgroundColor: colors.surfaceMuted,
+        selectedColor: colors.primaryAction,
+        secondarySelectedColor: colors.primaryAction,
         side: BorderSide.none,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),

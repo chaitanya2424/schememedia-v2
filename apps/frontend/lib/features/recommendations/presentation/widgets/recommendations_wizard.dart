@@ -263,8 +263,8 @@ class _WizardHeader extends StatelessWidget {
       children: [
         LinearProgressIndicator(
           value: progress,
-          backgroundColor: const Color(0xFFE2E8F0),
-          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1E3A8A)),
+          backgroundColor: context.colors.surfaceMuted,
+          valueColor: AlwaysStoppedAnimation<Color>(context.colors.brand),
           minHeight: 4,
         ),
         Padding(
@@ -600,7 +600,8 @@ class _QueryStep extends ConsumerWidget {
               icon: const Icon(Icons.arrow_forward_rounded),
               label: Text(isHindi ? '30-सेकंड एक्सप्रेस क्विज़ शुरू करें' : 'Start 30-Sec Express Quiz'),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1E3A8A),
+                backgroundColor: context.colors.primaryAction,
+                foregroundColor: context.colors.onPrimaryAction,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -665,12 +666,12 @@ class _BasicDetailsStep extends ConsumerWidget {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+                  color: context.colors.brandTint,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${(age ?? 28).toInt()} yrs',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.brand),
                 ),
               ),
             ],
@@ -733,7 +734,8 @@ class _BasicDetailsStep extends ConsumerWidget {
               icon: const Icon(Icons.arrow_forward_rounded),
               label: Text(strings.isHindi ? 'अगला: आर्थिक और व्यवसाय' : 'Next: Socio-Economic Profile'),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1E3A8A),
+                backgroundColor: context.colors.primaryAction,
+                foregroundColor: context.colors.onPrimaryAction,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -867,26 +869,54 @@ class _EconomicDetailsStep extends ConsumerWidget {
             runSpacing: 8,
             children: [
               ActionChip(
-                label: const Text('< ₹1,00,000 (BPL)'),
-                backgroundColor: income != null && income <= 100000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                label: Text(
+                  '< ₹1,00,000 (BPL)',
+                  style: TextStyle(
+                    color: income != null && income <= 100000 ? context.colors.brand : context.colors.textPrimary,
+                    fontWeight: income != null && income <= 100000 ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
+                backgroundColor: income != null && income <= 100000 ? context.colors.brandTint : context.colors.surfaceMuted,
+                side: BorderSide(color: income != null && income <= 100000 ? context.colors.brand : context.colors.divider),
                 onPressed: () {
                   controller.setNumeric(EligibilityAttribute.annualIncome, 90000);
                   controller.setBoolean(EligibilityAttribute.hasBplCard, true);
                 },
               ),
               ActionChip(
-                label: const Text('₹1L – ₹2.5L (EWS)'),
-                backgroundColor: income != null && income > 100000 && income <= 250000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                label: Text(
+                  '₹1L – ₹2.5L (EWS)',
+                  style: TextStyle(
+                    color: income != null && income > 100000 && income <= 250000 ? context.colors.brand : context.colors.textPrimary,
+                    fontWeight: income != null && income > 100000 && income <= 250000 ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
+                backgroundColor: income != null && income > 100000 && income <= 250000 ? context.colors.brandTint : context.colors.surfaceMuted,
+                side: BorderSide(color: income != null && income > 100000 && income <= 250000 ? context.colors.brand : context.colors.divider),
                 onPressed: () => controller.setNumeric(EligibilityAttribute.annualIncome, 180000),
               ),
               ActionChip(
-                label: const Text('₹2.5L – ₹5.0L (LIG)'),
-                backgroundColor: income != null && income > 250000 && income <= 500000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                label: Text(
+                  '₹2.5L – ₹5.0L (LIG)',
+                  style: TextStyle(
+                    color: income != null && income > 250000 && income <= 500000 ? context.colors.brand : context.colors.textPrimary,
+                    fontWeight: income != null && income > 250000 && income <= 500000 ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
+                backgroundColor: income != null && income > 250000 && income <= 500000 ? context.colors.brandTint : context.colors.surfaceMuted,
+                side: BorderSide(color: income != null && income > 250000 && income <= 500000 ? context.colors.brand : context.colors.divider),
                 onPressed: () => controller.setNumeric(EligibilityAttribute.annualIncome, 350000),
               ),
               ActionChip(
-                label: const Text('> ₹5,00,000'),
-                backgroundColor: income != null && income > 500000 ? const Color(0xFF1E3A8A).withValues(alpha: 0.15) : null,
+                label: Text(
+                  '> ₹5,00,000',
+                  style: TextStyle(
+                    color: income != null && income > 500000 ? context.colors.brand : context.colors.textPrimary,
+                    fontWeight: income != null && income > 500000 ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
+                backgroundColor: income != null && income > 500000 ? context.colors.brandTint : context.colors.surfaceMuted,
+                side: BorderSide(color: income != null && income > 500000 ? context.colors.brand : context.colors.divider),
                 onPressed: () => controller.setNumeric(EligibilityAttribute.annualIncome, 600000),
               ),
             ],
@@ -900,7 +930,8 @@ class _EconomicDetailsStep extends ConsumerWidget {
               icon: const Icon(Icons.arrow_forward_rounded),
               label: Text(strings.isHindi ? 'अगला: विशेष मानदंड' : 'Next: Special Eligibility'),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1E3A8A),
+                backgroundColor: context.colors.primaryAction,
+                foregroundColor: context.colors.onPrimaryAction,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -1010,7 +1041,8 @@ class _SpecialCriteriaStep extends ConsumerWidget {
               icon: const Icon(Icons.search_rounded),
               label: Text(strings.isHindi ? 'अनुकूल योजनाएं देखें' : 'Save & View My Schemes'),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1E3A8A),
+                backgroundColor: context.colors.primaryAction,
+                foregroundColor: context.colors.onPrimaryAction,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),

@@ -263,20 +263,24 @@ class _EmptyState extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: theme.brightness == Brightness.dark ? colors.surfaceMuted : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
+              border: Border.all(color: theme.brightness == Brightness.dark ? colors.divider : const Color(0xFFBFDBFE)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFDBEAFE),
+                  decoration: BoxDecoration(
+                    color: theme.brightness == Brightness.dark ? colors.brandTint : const Color(0xFFDBEAFE),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.shield_rounded, color: Color(0xFF1D4ED8), size: 18),
+                  child: Icon(
+                    Icons.shield_rounded,
+                    color: theme.brightness == Brightness.dark ? colors.brand : const Color(0xFF1D4ED8),
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
@@ -287,14 +291,14 @@ class _EmptyState extends ConsumerWidget {
                         strings.answersGrounded,
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1E3A8A),
+                          color: colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         strings.answersGroundedSubtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF1E40AF),
+                          color: colors.textSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -354,26 +358,28 @@ class _TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final theme = Theme.of(context);
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: colors.surfaceMuted,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: const Color(0xFFDBEAFE)),
+          border: Border.all(color: colors.divider),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
+            SizedBox(
               height: 14,
               width: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1E3A8A)),
+              child: CircularProgressIndicator(strokeWidth: 2, color: colors.brand),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text('Thinking…', style: Theme.of(context).textTheme.bodySmall),
+            Text('Thinking…', style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
           ],
         ),
       ),
@@ -433,15 +439,15 @@ class _InputBar extends ConsumerWidget {
             tooltip: enabled ? strings.sendMessageTooltip : strings.sendingTooltip,
             onPressed: enabled ? onSend : null,
             style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
+              backgroundColor: colors.primaryAction,
+              foregroundColor: colors.onPrimaryAction,
             ),
             icon: enabled
                 ? const Icon(Icons.send_rounded)
-                : const SizedBox(
+                : SizedBox(
                     height: 16,
                     width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimaryAction),
                   ),
           ),
         ],

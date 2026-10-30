@@ -233,12 +233,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
-                                color: isSignIn ? Colors.white : Colors.transparent,
+                                color: isSignIn ? colors.surface : Colors.transparent,
                                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                                 boxShadow: isSignIn
                                     ? [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.06),
+                                          color: colors.shadow.withValues(alpha: 0.08),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -265,12 +265,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
-                                color: !isSignIn ? Colors.white : Colors.transparent,
+                                color: !isSignIn ? colors.surface : Colors.transparent,
                                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                                 boxShadow: !isSignIn
                                     ? [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.06),
+                                          color: colors.shadow.withValues(alpha: 0.08),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -395,20 +395,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         FilledButton(
                           onPressed: _submitting ? null : _submit,
                           style: FilledButton.styleFrom(
-                            backgroundColor: colors.brand,
-                            foregroundColor: Colors.white,
+                            backgroundColor: colors.primaryAction,
+                            foregroundColor: colors.onPrimaryAction,
                             minimumSize: const Size.fromHeight(48),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                             ),
                           ),
                           child: _submitting
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: colors.onPrimaryAction,
                                   ),
                                 )
                               : Row(

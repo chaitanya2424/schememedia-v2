@@ -94,7 +94,8 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                         icon: const Icon(Icons.explore_outlined),
                         label: Text(strings.isHindi ? 'सभी योजनाएं देखें' : 'Explore all schemes'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E3A8A),
+                          backgroundColor: context.colors.primaryAction,
+                          foregroundColor: context.colors.onPrimaryAction,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
                       ),
@@ -107,10 +108,10 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+                            color: context.colors.brandTint,
                             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                           ),
-                          child: const Icon(Icons.bookmark_rounded, color: Color(0xFF1E3A8A), size: 24),
+                          child: Icon(Icons.bookmark_rounded, color: context.colors.brand, size: 24),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
@@ -151,12 +152,19 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                             ),
                             selected: _selectedCategory == null,
                             onSelected: (_) => setState(() => _selectedCategory = null),
-                            selectedColor: const Color(0xFF1E3A8A),
+                            backgroundColor: context.colors.surfaceMuted,
+                            selectedColor: context.colors.primaryAction,
                             labelStyle: TextStyle(
-                              color: _selectedCategory == null ? Colors.white : null,
+                              color: _selectedCategory == null ? context.colors.onPrimaryAction : context.colors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                             showCheckmark: false,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                              side: BorderSide(
+                                color: _selectedCategory == null ? context.colors.primaryAction : context.colors.divider,
+                              ),
+                            ),
                           ),
                           for (final cat in categories)
                             Padding(
@@ -165,12 +173,19 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                                 label: Text(strings.categoryName(cat)),
                                 selected: _selectedCategory == cat,
                                 onSelected: (_) => setState(() => _selectedCategory = cat),
-                                selectedColor: const Color(0xFF1E3A8A),
+                                backgroundColor: context.colors.surfaceMuted,
+                                selectedColor: context.colors.primaryAction,
                                 labelStyle: TextStyle(
-                                  color: _selectedCategory == cat ? Colors.white : null,
+                                  color: _selectedCategory == cat ? context.colors.onPrimaryAction : context.colors.textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 showCheckmark: false,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                                  side: BorderSide(
+                                    color: _selectedCategory == cat ? context.colors.primaryAction : context.colors.divider,
+                                  ),
+                                ),
                               ),
                             ),
                         ],

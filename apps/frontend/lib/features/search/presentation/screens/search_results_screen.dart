@@ -101,10 +101,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E3A8A).withValues(alpha: 0.1),
+                color: context.colors.brandTint,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
               ),
-              child: const Icon(Icons.account_balance, color: Color(0xFF1E3A8A), size: 20),
+              child: Icon(Icons.account_balance, color: context.colors.brand, size: 20),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(strings.exploreTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -303,7 +303,7 @@ class _InitialExplorePrompt extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb_outline, size: 20, color: Color(0xFF1E3A8A)),
+              Icon(Icons.lightbulb_outline, size: 20, color: context.colors.brand),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 strings.popularWelfareDomains,
@@ -379,7 +379,7 @@ class _FilterSheet extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.sort_rounded, size: 20, color: Color(0xFF1E3A8A)),
+              Icon(Icons.sort_rounded, size: 20, color: context.colors.brand),
               const SizedBox(width: AppSpacing.sm),
               Text(strings.sortSchemes, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
             ],
@@ -390,7 +390,7 @@ class _FilterSheet extends ConsumerWidget {
             leading: const Icon(Icons.auto_awesome_outlined),
             title: Text(strings.relevanceMatch, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(strings.relevanceSubtitle),
-            trailing: sortAlphabetically ? null : const Icon(Icons.check_circle_rounded, color: Color(0xFF1E3A8A)),
+            trailing: sortAlphabetically ? null : Icon(Icons.check_circle_rounded, color: context.colors.brand),
             onTap: () => Navigator.of(context).pop(false),
           ),
           ListTile(
@@ -398,7 +398,7 @@ class _FilterSheet extends ConsumerWidget {
             leading: const Icon(Icons.sort_by_alpha_rounded),
             title: Text(strings.nameAtoZ, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(strings.nameAtoZSubtitle),
-            trailing: sortAlphabetically ? const Icon(Icons.check_circle_rounded, color: Color(0xFF1E3A8A)) : null,
+            trailing: sortAlphabetically ? Icon(Icons.check_circle_rounded, color: context.colors.brand) : null,
             onTap: () => Navigator.of(context).pop(true),
           ),
         ],
@@ -522,13 +522,15 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => onTap(),
-      selectedColor: const Color(0xFF1E3A8A),
+      backgroundColor: colors.surfaceMuted,
+      selectedColor: colors.primaryAction,
       labelStyle: TextStyle(
-        color: selected ? Colors.white : const Color(0xFF1E293B),
+        color: selected ? colors.onPrimaryAction : colors.textPrimary,
         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         fontSize: 13,
       ),
@@ -537,7 +539,7 @@ class _CategoryChip extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         side: BorderSide(
-          color: selected ? const Color(0xFF1E3A8A) : const Color(0xFFCBD5E1),
+          color: selected ? colors.primaryAction : colors.divider,
         ),
       ),
     );
@@ -598,15 +600,18 @@ class _VerificationBreakdownBadges extends ConsumerWidget {
 
     if (verifiedCount == 0) return const SizedBox.shrink();
 
+    final isDark = theme.brightness == Brightness.dark;
+    final verifiedColor = isDark ? const Color(0xFF4ADE80) : const Color(0xFF15803D);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF15803D)),
+        Icon(Icons.verified_rounded, size: 14, color: verifiedColor),
         const SizedBox(width: 4),
         Text(
           strings.verifiedCount(verifiedCount),
           style: theme.textTheme.labelSmall?.copyWith(
-            color: const Color(0xFF15803D),
+            color: verifiedColor,
             fontWeight: FontWeight.w600,
           ),
         ),

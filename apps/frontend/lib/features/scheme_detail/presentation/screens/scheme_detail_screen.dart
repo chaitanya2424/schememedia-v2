@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/domain/enums.dart';
+import '../../../../core/local/profile_offline_cache_repository.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/router/routes.dart';
@@ -207,6 +208,41 @@ class _PrimaryColumn extends ConsumerWidget {
             style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.outline),
           ),
         ],
+        if (ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+            decoration: BoxDecoration(
+              color: theme.brightness == Brightness.dark
+                  ? const Color(0xFF064E3B).withValues(alpha: 0.35)
+                  : const Color(0xFF065F46).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: theme.brightness == Brightness.dark
+                    ? const Color(0xFF059669).withValues(alpha: 0.45)
+                    : const Color(0xFF10B981).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.offline_pin,
+                  size: 14,
+                  color: theme.brightness == Brightness.dark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  strings.isHindi ? 'ऑफ़लाइन उपलब्ध · आपकी प्रोफ़ाइल में सहेजा गया' : 'Saved for Offline · Ready Without Internet',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.brightness == Brightness.dark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (detail.descriptionShort != null) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(detail.descriptionShort!, style: theme.textTheme.bodyMedium),
@@ -288,23 +324,28 @@ class _WhyThisLooksPromisingCard extends ConsumerWidget {
           : ' $unknownCount detail${unknownCount == 1 ? '' : 's'} still need checking.');
     }
 
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
+        color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFECFDF5),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: const Color(0xFFA7F3D0)),
+        border: Border.all(color: isDark ? const Color(0xFF059669).withValues(alpha: 0.45) : const Color(0xFFA7F3D0)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Color(0xFFD1FAE5),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF065F46) : const Color(0xFFD1FAE5),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 20),
+            child: Icon(
+              Icons.check_circle_rounded,
+              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669),
+              size: 20,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -315,14 +356,14 @@ class _WhyThisLooksPromisingCard extends ConsumerWidget {
                   strings.whyThisLooksPromising,
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF065F46),
+                    color: isDark ? const Color(0xFFECFDF5) : const Color(0xFF065F46),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   body.toString(),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF047857),
+                    color: isDark ? const Color(0xFFD1FAE5) : const Color(0xFF047857),
                     height: 1.4,
                   ),
                 ),
@@ -667,13 +708,13 @@ class _BenefitsCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: context.colors.surfaceMuted,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     entry.key.toUpperCase(),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFF475569),
+                      color: context.colors.textSecondary,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                     ),
@@ -681,38 +722,49 @@ class _BenefitsCard extends StatelessWidget {
                 ),
               ),
             for (final b in entry.value) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.currency_rupee, size: 20, color: Color(0xFF16A34A)),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        b.amountText,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF15803D),
-                        ),
+              Builder(
+                builder: (context) {
+                  final isDark = theme.brightness == Brightness.dark;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF059669).withValues(alpha: 0.45) : const Color(0xFFBBF7D0),
                       ),
                     ),
-                    if (b.isTruncated)
-                      Tooltip(
-                        message: 'This amount was cut off in the source data.',
-                        child: Icon(
-                          Icons.unfold_more,
-                          size: AppSpacing.iconSm,
-                          color: theme.colorScheme.tertiary,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.currency_rupee,
+                          size: 20,
+                          color: isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A),
                         ),
-                      ),
-                  ],
-                ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            b.amountText,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
+                            ),
+                          ),
+                        ),
+                        if (b.isTruncated)
+                          Tooltip(
+                            message: 'This amount was cut off in the source data.',
+                            child: Icon(
+                              Icons.unfold_more,
+                              size: AppSpacing.iconSm,
+                              color: theme.colorScheme.tertiary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
               if (b != grouped.values.last.last) const SizedBox(height: AppSpacing.sm),
             ],
@@ -759,35 +811,36 @@ class _EligibilityRuleRow extends ConsumerWidget {
     final theme = Theme.of(context);
     final lang = ref.watch(languageProvider);
     final strings = AppStrings.of(lang);
+    final isDark = theme.brightness == Brightness.dark;
     final (icon, color, bgColor, caption) = switch (rule.state) {
       EligibilityState.pass => (
         Icons.check_circle_rounded,
-        const Color(0xFF15803D),
-        const Color(0xFFF0FDF4),
+        isDark ? const Color(0xFF4ADE80) : const Color(0xFF15803D),
+        isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFF0FDF4),
         strings.matchedFromProfile,
       ),
       EligibilityState.fail => (
         Icons.cancel_rounded,
-        Theme.of(context).colorScheme.error,
-        const Color(0xFFFEF2F2),
+        isDark ? const Color(0xFFF87171) : Theme.of(context).colorScheme.error,
+        isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.3) : const Color(0xFFFEF2F2),
         strings.doesNotMatchProfile,
       ),
       EligibilityState.unknown => (
         Icons.help_outline_rounded,
-        const Color(0xFFB45309),
-        const Color(0xFFFFFBEB),
+        isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
+        isDark ? const Color(0xFF78350F).withValues(alpha: 0.25) : const Color(0xFFFFFBEB),
         strings.weDontHaveThisYet,
       ),
       EligibilityState.notApplicable => (
         Icons.remove_circle_outline_rounded,
-        theme.colorScheme.outline,
-        const Color(0xFFF8FAFC),
+        context.colors.textSecondary,
+        context.colors.surfaceMuted,
         strings.notApplicable,
       ),
       EligibilityState.unrecognized => (
         Icons.help_outline_rounded,
-        theme.colorScheme.outline,
-        const Color(0xFFF8FAFC),
+        context.colors.textSecondary,
+        context.colors.surfaceMuted,
         lang == AppLanguage.hindi ? 'अज्ञात' : 'Unknown',
       ),
     };
@@ -822,7 +875,7 @@ class _EligibilityRuleRow extends ConsumerWidget {
                   ruleLabel,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 Text(
@@ -872,9 +925,9 @@ class _KeepTheseReadyBox extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: colors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
+        border: Border.all(color: colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -884,10 +937,10 @@ class _KeepTheseReadyBox extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
-                child: const Icon(Icons.folder_shared_outlined, size: 20, color: Color(0xFF334155)),
+                child: Icon(Icons.folder_shared_outlined, size: 20, color: colors.brand),
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
@@ -907,18 +960,18 @@ class _KeepTheseReadyBox extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: colors.surface,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: colors.divider),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.description_outlined, size: 14, color: Color(0xFF64748B)),
+                      Icon(Icons.description_outlined, size: 14, color: colors.textSecondary),
                       const SizedBox(width: 6),
                       Text(
                         doc.name,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1E293B),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
@@ -975,8 +1028,8 @@ class _OfficialLink extends ConsumerWidget {
         icon: const Icon(Icons.open_in_new),
         label: Text(strings.visitOfficialPage),
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF1E3A8A),
-          foregroundColor: Colors.white,
+          backgroundColor: context.colors.primaryAction,
+          foregroundColor: context.colors.onPrimaryAction,
           padding: const EdgeInsets.symmetric(vertical: 14),
           elevation: 1,
         ),
