@@ -16,6 +16,8 @@ import '../../../recommendations/domain/citizen_archetype.dart';
 import '../../../recommendations/presentation/widgets/archetype_selector_dialog.dart';
 import '../../../recommendations/presentation/widgets/digilocker_dialog.dart';
 import '../../../recommendations/presentation/widgets/document_scanner_dialog.dart';
+import '../../../notifications/presentation/providers/notifications_providers.dart';
+import '../../../notifications/presentation/widgets/notification_center_sheet.dart';
 import '../providers/profile_providers.dart';
 
 /// A full product screen. Signed out: an honest empty state -- never a
@@ -99,12 +101,50 @@ class ProfileScreen extends ConsumerWidget {
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    _InertRow(
-                      icon: Icons.notifications_outlined,
-                      title: strings.updatesAboutNewSchemes,
-                      subtitle: strings.isHindi
-                          ? 'कोई सूचना चैनल (ईमेल/पुश) अभी सक्रिय नहीं है'
-                          : 'No delivery channel (email/push) exists yet',
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colors.brandTint,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.notifications_active_outlined, color: colors.brand, size: 20),
+                      ),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              strings.isHindi ? 'योजना सूचनाएं एवं सीट अलर्ट' : 'Welfare Alerts & Quotas',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final count = ref.watch(unreadNotificationsCountProvider);
+                              if (count == 0) return const SizedBox.shrink();
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDC2626),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '$count',
+                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        strings.isHindi
+                            ? 'सीट सीमा, समय सीमा और नई योजनाओं की तत्काल सूचना'
+                            : 'Capacity limits, deadlines & new matched schemes',
+                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => NotificationCenterSheet.show(context),
                     ),
                     const Divider(height: 1),
                     const _LanguageRow(),
@@ -534,39 +574,6 @@ class _ThemeRow extends ConsumerWidget {
   }
 }
 
-class _InertRow extends StatelessWidget {
-  const _InertRow({required this.icon, required this.title, required this.subtitle});
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        children: [
-          Icon(icon, color: colors.textTertiary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.bodyMedium),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _LanguageRow extends ConsumerWidget {
   const _LanguageRow();

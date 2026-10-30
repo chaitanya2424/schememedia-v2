@@ -12,6 +12,7 @@ import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../domain/scheme_summary.dart';
 import '../providers/search_providers.dart';
 import '../widgets/scheme_result_card.dart';
@@ -111,6 +112,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           ],
         ),
         actions: const [
+          NotificationBellButton(),
           Padding(
             padding: EdgeInsets.only(right: AppSpacing.md),
             child: LanguageToggleButton(),

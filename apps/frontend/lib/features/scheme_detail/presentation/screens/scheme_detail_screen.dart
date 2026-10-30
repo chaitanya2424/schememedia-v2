@@ -943,50 +943,136 @@ class _KeepTheseReadyBox extends ConsumerWidget {
                 child: Icon(Icons.folder_shared_outlined, size: 20, color: colors.brand),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                strings.keepTheseReady,
-                style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  strings.keepTheseReady,
+                  style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: colors.brandTint,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${documents.length} ${lang == AppLanguage.hindi ? 'दस्तावेज़' : 'Items'}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.brand,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
+          Column(
             children: [
-              for (final doc in documents)
+              for (int i = 0; i < documents.length; i++) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: colors.surface,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                     border: Border.all(color: colors.divider),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(Icons.description_outlined, size: 14, color: colors.textSecondary),
-                      const SizedBox(width: 6),
-                      Text(
-                        doc.name,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceMuted,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${i + 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              documents[i].name,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: colors.textPrimary,
+                                height: 1.3,
+                              ),
+                              softWrap: true,
+                            ),
+                            if (documents[i].needsReview)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  lang == AppLanguage.hindi ? 'सत्यापन आवश्यक' : 'Verification required',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.brand,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceMuted,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: colors.divider),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 12, color: colors.brand),
+                            const SizedBox(width: 4),
+                            Text(
+                              lang == AppLanguage.hindi ? 'अनिवार्य' : 'Required',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: colors.brand,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+                if (i != documents.length - 1) const SizedBox(height: 8),
+              ],
             ],
           ),
           if (needsReviewCount > 0) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              lang == AppLanguage.hindi
-                  ? '$needsReviewCount दस्तावेज़ों की स्पष्ट पुष्टि नहीं हो सकी -- पुनः जांच करना उचित होगा।'
-                  : '$needsReviewCount document${needsReviewCount == 1 ? '' : 's'} could not be confidently '
-                      'parsed -- worth double-checking.',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 14, color: theme.colorScheme.tertiary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    lang == AppLanguage.hindi
+                        ? '$needsReviewCount दस्तावेज़ों की स्पष्ट पुष्टि नहीं हो सकी -- आवेदन से पहले पुनः जांच करना उचित होगा।'
+                        : '$needsReviewCount document${needsReviewCount == 1 ? '' : 's'} could not be confidently parsed -- worth double-checking before applying.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

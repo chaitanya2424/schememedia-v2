@@ -11,6 +11,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
+import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../recommendations/domain/recommendation.dart';
 import '../../../recommendations/presentation/providers/profile_form_provider.dart';
 import '../../../recommendations/presentation/providers/recommendations_providers.dart';
@@ -362,6 +363,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Text('SchemeMedia'),
             ],
           ),
+          actions: const [
+            NotificationBellButton(),
+            LanguageToggleButton(),
+            SizedBox(width: AppSpacing.sm),
+          ],
         ),
         body: SafeArea(
           child: ResponsiveContainer(
@@ -390,6 +396,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Text('SchemeMedia'),
           ],
         ),
+        actions: const [
+          NotificationBellButton(),
+          LanguageToggleButton(),
+          SizedBox(width: AppSpacing.sm),
+        ],
       ),
       body: SafeArea(
         child: ResponsiveContainer(

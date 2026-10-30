@@ -8,6 +8,7 @@ import '../theme/app_shadows.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/language_toggle_button.dart';
 import '../widgets/responsive.dart';
+import '../../features/notifications/presentation/widgets/notification_bell_button.dart';
 import 'routes.dart';
 
 /// One persistent nav frame for all six top-level screens -- bottom
@@ -90,6 +91,8 @@ class AppShell extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       const LanguageToggleButton(),
+                      const SizedBox(height: 6),
+                      const NotificationBellButton(),
                     ],
                   ),
                 ),
