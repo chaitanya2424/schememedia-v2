@@ -96,7 +96,8 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
                         style: FilledButton.styleFrom(
                           backgroundColor: context.colors.primaryAction,
                           foregroundColor: context.colors.onPrimaryAction,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          minimumSize: const Size(0, 38),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
                       ),
                     ],

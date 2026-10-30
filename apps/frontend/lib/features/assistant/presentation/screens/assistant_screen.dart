@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../providers/assistant_providers.dart';
@@ -198,100 +196,133 @@ class _EmptyState extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const EyebrowLabel('AI WELFARE ASSISTANT'),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            strings.isHindi ? 'पूछें, और स्पष्ट समझें।' : 'Ask, then understand.',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            strings.isHindi
-                ? 'मैं आधिकारिक नियमों का संदर्भ दूंगा, पात्रता स्पष्ट करूंगा और कभी अनुमान नहीं लगाऊंगा।'
-                : "I'll point to the rule, explain the uncertainty and never guess on your behalf.",
-            style: theme.textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          AppCard(
-            child: Column(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colors.brand, const Color(0xFF1E3A8A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 28),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.brand.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  strings.isHindi ? 'आप क्या जानना चाहते हैं?' : 'What would you like to know?',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          strings.isHindi ? 'कल्याण सहायक' : 'Welfare Assistant',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            strings.isHindi ? 'सत्यापित नियम' : 'Grounded AI',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF047857),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      strings.isHindi
+                          ? 'आधिकारिक सरकारी नियमों पर आधारित स्पष्ट मार्गदर्शन।'
+                          : 'Clear, trusted guidance verified against official rules.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  strings.isHindi
-                      ? 'किसी योजना, लाभ या पात्रता दस्तावेजों के बारे में प्रश्न पूछें।'
-                      : 'Try a question about a scheme, a benefit or the documents you may need.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                for (final example in examples) ...[
-                  _SuggestionCard(text: example, onTap: () => onExampleTap(example)),
-                  if (example != examples.last) const SizedBox(height: AppSpacing.sm),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: theme.brightness == Brightness.dark ? colors.surfaceMuted : const Color(0xFFEFF6FF),
+              color: colors.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(color: theme.brightness == Brightness.dark ? colors.divider : const Color(0xFFBFDBFE)),
+              border: Border.all(color: colors.divider.withValues(alpha: 0.8)),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.shadow.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline_rounded, size: 16, color: colors.brand),
+                    const SizedBox(width: 6),
+                    Text(
+                      strings.isHindi ? 'सामान्य प्रश्न सुझाव' : 'Frequently Asked Questions',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                for (final example in examples) ...[
+                  _SuggestionCard(text: example, onTap: () => onExampleTap(example)),
+                  if (example != examples.last) const SizedBox(height: 8),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: colors.brandTint,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: colors.brand.withValues(alpha: 0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: theme.brightness == Brightness.dark ? colors.brandTint : const Color(0xFFDBEAFE),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.shield_rounded,
-                    color: theme.brightness == Brightness.dark ? colors.brand : const Color(0xFF1D4ED8),
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
+                Icon(Icons.verified_user_outlined, color: colors.brand, size: 20),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         strings.answersGrounded,
-                        style: theme.textTheme.labelLarge?.copyWith(
+                        style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
+                          color: colors.brand,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -299,7 +330,7 @@ class _EmptyState extends ConsumerWidget {
                         strings.answersGroundedSubtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.textSecondary,
-                          height: 1.4,
+                          height: 1.35,
                         ),
                       ),
                     ],
@@ -324,29 +355,32 @@ class _SuggestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: colors.surface,
-          side: BorderSide(color: colors.divider),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Color(0xFF2563EB)),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                text,
-                textAlign: TextAlign.left,
-                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+    return Material(
+      color: colors.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.chat_bubble_outline_rounded, size: 14, color: colors.brand),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  text,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                  ),
+                ),
               ),
-            ),
-            Icon(Icons.arrow_forward_rounded, size: AppSpacing.iconSm, color: colors.brand),
-          ],
+              const SizedBox(width: 6),
+              Icon(Icons.arrow_forward_ios_rounded, size: 11, color: colors.textTertiary),
+            ],
+          ),
         ),
       ),
     );
@@ -400,40 +434,46 @@ class _InputBar extends ConsumerWidget {
     final strings = ref.watch(stringsProvider);
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
       decoration: BoxDecoration(
         color: colors.surface,
-        border: Border(top: BorderSide(color: colors.divider.withValues(alpha: 0.6))),
+        border: Border(top: BorderSide(color: colors.divider.withValues(alpha: 0.7))),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: colors.surfaceMuted,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                border: Border.all(color: colors.divider),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: colors.divider.withValues(alpha: 0.8)),
               ),
               child: TextField(
                 key: const ValueKey('assistant_message_field'),
                 controller: controller,
                 enabled: enabled,
                 minLines: 1,
-                maxLines: 5,
+                maxLines: 4,
                 maxLength: _maxMessageLength,
                 textInputAction: TextInputAction.send,
+                style: const TextStyle(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: strings.assistantInputHint,
+                  hintStyle: TextStyle(color: colors.textTertiary, fontSize: 13.5),
                   counterText: '',
+                  isDense: true,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
                 onSubmitted: (_) => onSend(),
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: 8),
           IconButton.filled(
             key: const ValueKey('assistant_send_button'),
             tooltip: enabled ? strings.sendMessageTooltip : strings.sendingTooltip,
@@ -441,9 +481,11 @@ class _InputBar extends ConsumerWidget {
             style: IconButton.styleFrom(
               backgroundColor: colors.primaryAction,
               foregroundColor: colors.onPrimaryAction,
+              minimumSize: const Size(38, 38),
+              padding: EdgeInsets.zero,
             ),
             icon: enabled
-                ? const Icon(Icons.send_rounded)
+                ? const Icon(Icons.arrow_upward_rounded, size: 20)
                 : SizedBox(
                     height: 16,
                     width: 16,

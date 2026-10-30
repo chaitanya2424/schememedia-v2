@@ -1545,7 +1545,8 @@ class _StickyBottomActionBar extends ConsumerWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.primaryAction,
                   foregroundColor: colors.onPrimaryAction,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  minimumSize: const Size(0, 38),
+                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
                 ),
                 onPressed: detail.officialUrl == null
                     ? null

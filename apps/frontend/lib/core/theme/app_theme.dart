@@ -49,7 +49,7 @@ abstract final class AppTheme {
     );
 
     final textTheme = _textTheme(brightness, colors);
-    final buttonMinimumSize = const Size(64, 48); // 48dp minimum touch target
+    final buttonMinimumSize = const Size(48, 40); // 40dp proportional touch target
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
     );
@@ -158,7 +158,7 @@ abstract final class AppTheme {
           backgroundColor: colors.primaryAction,
           foregroundColor: colors.onPrimaryAction,
           minimumSize: buttonMinimumSize,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
           shape: buttonShape,
           elevation: 0,
         ),
@@ -175,20 +175,24 @@ abstract final class AppTheme {
           foregroundColor: colors.textPrimary,
           side: BorderSide.none,
           minimumSize: buttonMinimumSize,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
           shape: buttonShape,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: colors.brand,
-          minimumSize: buttonMinimumSize,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          minimumSize: const Size(40, 36),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
           shape: buttonShape,
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(minimumSize: buttonMinimumSize),
+        style: IconButton.styleFrom(
+          minimumSize: const Size(36, 36),
+          padding: const EdgeInsets.all(8),
+          visualDensity: VisualDensity.compact,
+        ),
       ),
 
       // Chip theme with adaptive selected colors and accessible contrast

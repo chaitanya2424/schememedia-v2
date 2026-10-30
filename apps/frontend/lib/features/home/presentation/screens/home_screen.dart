@@ -81,7 +81,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -156,43 +167,77 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // --- 3. Modern Search Bar with Elevated Action Button ---
+        // --- 3. Sleek, Modern Search Bar ---
         Container(
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-            boxShadow: AppShadows.card(colors.shadow),
-            border: Border.all(color: colors.divider.withValues(alpha: 0.6)),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: colors.divider.withValues(alpha: 0.8), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: colors.shadow.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          child: TextField(
-            controller: _controller,
-            textInputAction: TextInputAction.search,
-            style: theme.textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
-            decoration: InputDecoration(
-              hintText: strings.searchPlaceholder,
-              hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-              prefixIcon: Icon(Icons.search, color: colors.brand),
-              suffixIcon: Padding(
-                padding: const EdgeInsets.all(4.0),
+          child: Row(
+            children: [
+              const SizedBox(width: 14),
+              Icon(Icons.search_rounded, color: colors.brand, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  textInputAction: TextInputAction.search,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: strings.searchPlaceholder,
+                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                    isDense: true,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                  onSubmitted: _submit,
+                ),
+              ),
+              if (_controller.text.isNotEmpty)
+                IconButton(
+                  tooltip: strings.clear,
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    _controller.clear();
+                    setState(() {});
+                  },
+                ),
+              Padding(
+                padding: const EdgeInsets.only(right: 6, left: 2),
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.primaryAction,
                     foregroundColor: colors.onPrimaryAction,
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
                   onPressed: () => _submit(),
-                  child: Text(strings.isHindi ? 'खोजें' : 'Search'),
+                  child: Text(
+                    strings.isHindi ? 'खोजें' : 'Search',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-            onSubmitted: _submit,
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -602,14 +647,15 @@ class _HeroCard extends ConsumerWidget {
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEA580C),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+              minimumSize: const Size(0, 38),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
               ),
             ),
             onPressed: () => context.go(AppRoutes.recommendations),
-            icon: const Icon(Icons.arrow_forward, size: 17),
-            label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
+            icon: const Icon(Icons.arrow_forward, size: 16),
+            label: Text(buttonLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
           ),
         ],
       ),
@@ -912,9 +958,11 @@ class _PickedForYou extends ConsumerWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primaryAction,
                 foregroundColor: colors.onPrimaryAction,
+                minimumSize: const Size(0, 36),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
               onPressed: () => context.go(AppRoutes.recommendations),
-              icon: const Icon(Icons.tune, size: 16),
+              icon: const Icon(Icons.tune, size: 15),
               label: Text(strings.isHindi ? 'अपनी प्रोफ़ाइल पूरी करें' : 'Complete My Profile'),
             ),
           ],

@@ -41,13 +41,33 @@ class _UserBubble extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: scheme.primary,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(4),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: scheme.primary.withValues(alpha: 0.18),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: Text(message, style: TextStyle(color: scheme.onPrimary)),
+          child: Text(
+            message,
+            style: TextStyle(
+              color: scheme.onPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
+          ),
         ),
       ),
     );
@@ -80,16 +100,67 @@ class _AssistantBubbleState extends ConsumerState<_AssistantBubble> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            border: Border.all(color: colors.divider),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+              bottomLeft: Radius.circular(4),
+            ),
+            border: Border.all(color: colors.divider.withValues(alpha: 0.8)),
+            boxShadow: [
+              BoxShadow(
+                color: colors.shadow.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colors.brandTint,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.auto_awesome, size: 12, color: colors.brand),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    strings.isHindi ? 'कल्याण सहायक' : 'Welfare Assistant',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: colors.brand,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      strings.isHindi ? 'नियम आधारित' : 'Rule Grounded',
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF047857),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text(
                 turn.reply,
                 style: theme.textTheme.bodyMedium?.copyWith(

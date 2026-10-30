@@ -145,13 +145,13 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: colors.surface,
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                    border: Border.all(color: colors.divider),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    border: Border.all(color: colors.divider.withValues(alpha: 0.8), width: 1.2),
                     boxShadow: [
                       BoxShadow(
-                        color: colors.shadow.withValues(alpha: 0.05),
+                        color: colors.shadow.withValues(alpha: 0.04),
                         blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
@@ -161,13 +161,13 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     decoration: InputDecoration(
                       hintText: strings.searchSchemesHint,
                       hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
-                      prefixIcon: Icon(Icons.search, color: colors.brand),
+                      prefixIcon: Icon(Icons.search_rounded, color: colors.brand, size: 22),
                       suffixIcon: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (_controller.text.isNotEmpty)
                             IconButton(
-                              icon: const Icon(Icons.close, size: 18),
+                              icon: const Icon(Icons.close_rounded, size: 18),
                               tooltip: strings.clear,
                               onPressed: () {
                                 _controller.clear();
@@ -175,7 +175,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                               },
                             ),
                           Container(
-                            height: 24,
+                            height: 20,
                             width: 1,
                             color: colors.divider,
                             margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -183,6 +183,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           IconButton(
                             icon: Icon(
                               Icons.tune_rounded,
+                              size: 20,
                               color: _sortAlphabetically ? colors.brand : colors.textSecondary,
                             ),
                             tooltip: strings.sortAndFilters,
@@ -191,7 +192,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                         ],
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
                     ),
                     onSubmitted: _runSearch,
                   ),

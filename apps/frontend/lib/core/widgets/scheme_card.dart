@@ -237,7 +237,7 @@ class SchemeCard extends ConsumerWidget {
                     label: Text(effectiveCta),
                     style: FilledButton.styleFrom(
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
                     ),
                   ),
                 ),
@@ -246,7 +246,7 @@ class SchemeCard extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: onSecondaryTap,
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
                     ),
                     child: Text(effectiveSecondary),
                   ),
@@ -262,7 +262,7 @@ class SchemeCard extends ConsumerWidget {
                 label: Text(effectiveCta),
                 style: FilledButton.styleFrom(
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
                 ),
               ),
             ),
