@@ -6,7 +6,6 @@ import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/async_value_view.dart';
-import '../../../../core/widgets/eyebrow_label.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
@@ -104,27 +103,30 @@ class _ResultsView extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: EyebrowLabel(strings.isHindi ? 'व्यक्तिगत सिफारिशें' : 'Personal recommendations'),
+              child: Text(
+                strings.isHindi ? 'आपकी योजनाएं' : 'Top Recommendations',
+                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
             ),
-            TextButton(
+            OutlinedButton.icon(
               onPressed: () => ref.read(recommendationsNotifierProvider.notifier).reset(),
-              child: Text(strings.isHindi ? 'उत्तर बदलें' : 'Edit answers'),
+              icon: const Icon(Icons.tune, size: 16),
+              label: Text(strings.isHindi ? 'फ़िल्टर बदलें' : 'Edit profile'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                visualDensity: VisualDensity.compact,
+              ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          strings.isHindi ? 'आपकी जरूरतों के अनुसार चयनित।' : 'Made for your next step.',
-          style: theme.textTheme.headlineSmall,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
           strings.isHindi
-              ? 'आपकी जानकारी के आधार पर तैयार सूची। यह स्वीकृति का वादा नहीं है।'
-              : "A considered shortlist from what you've told us. Nothing here is a promise of approval.",
-          style: theme.textTheme.bodyMedium,
+              ? '${response.totalReturned} योजनाएं आपकी प्रोफ़ाइल के अनुसार रैंक की गई हैं।'
+              : '${response.totalReturned} schemes ranked according to your profile.',
+          style: theme.textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
         if (response.profileProvided)
           _WhyTheseMatchesBanner(response: response)
         else
@@ -134,59 +136,17 @@ class _ResultsView extends ConsumerWidget {
                 ? 'सटीक व्यक्तिगत पात्रता देखने के लिए प्रोफ़ाइल विवरण जोड़ें।'
                 : 'Add some profile details to see personalized eligibility instead of "unknown".',
           ),
-        if (ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable) ...[
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF065F46).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.offline_pin, color: Color(0xFF059669), size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        strings.offlineProfileSchemesCount(
-                          response.totalReturned,
-                          ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ??
-                              (strings.isHindi ? 'नागरिक' : 'Citizen'),
-                        ),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF065F46),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        strings.offlinePocketSubtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF047857),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
             Expanded(
               child: Text(
-                strings.isHindi ? 'सर्वश्रेष्ठ मिलान' : 'Top matches',
-                style: theme.textTheme.titleMedium,
+                strings.isHindi ? 'सर्वश्रेष्ठ मिलान' : 'All Matches',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
             Text(
-              strings.isHindi ? 'अभी अपडेट हुआ' : 'Updated just now',
+              strings.isHindi ? 'ताज़ा अपडेट' : 'Ranked for you',
               style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
             ),
           ],
@@ -202,8 +162,7 @@ class _ResultsView extends ConsumerWidget {
   }
 }
 
-/// "Why these matches?" -- real, templated from what the profile actually
-/// carried, not the mockup's literal hand-written sentence.
+/// "Why these matches?" -- sleek, clean, templated from actual profile attributes
 class _WhyTheseMatchesBanner extends ConsumerWidget {
   const _WhyTheseMatchesBanner({required this.response});
 
@@ -213,6 +172,9 @@ class _WhyTheseMatchesBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final strings = ref.watch(stringsProvider);
+    final isOffline = ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable;
+    final cachedLabel = ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ??
+        (strings.isHindi ? 'नागरिक' : 'Citizen');
     final passLabels = response.recommendations
         .expand((r) => r.eligibilityRules)
         .where((r) => r.state.name == 'pass')
@@ -222,48 +184,82 @@ class _WhyTheseMatchesBanner extends ConsumerWidget {
         .toList();
     final body = strings.isHindi
         ? (passLabels.isEmpty
-            ? 'आपके उत्तरों के आधार पर यह सूची तैयार की गई है।'
-            : '${passLabels.join(', ')} के आधार पर यह सूची तैयार हुई।')
+            ? 'आपकी जनसांख्यिकीय प्रोफ़ाइल के आधार पर यह सूची तैयार की गई है।'
+            : '${passLabels.join(', ')} के आधार पर प्राथमिकता दी गई।')
         : (passLabels.isEmpty
-            ? 'Your answers shaped how these results are ranked.'
-            : '${passLabels.join(', ')} shaped this list.');
+            ? 'Ranked based on your demographic profile attributes.'
+            : 'Prioritized by: ${passLabels.join(', ')}');
 
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFECFDF5),
+        color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.35) : const Color(0xFFECFDF5),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: const Color(0xFFA7F3D0)),
+        border: Border.all(color: isDark ? const Color(0xFF059669).withValues(alpha: 0.45) : const Color(0xFFA7F3D0)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Color(0xFFD1FAE5),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF065F46) : const Color(0xFFD1FAE5),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF059669)),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 18,
+              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669),
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  strings.isHindi ? 'यह योजनाएं क्यों?' : 'Why these matches?',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF065F46),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        strings.isHindi ? 'सटीक मिलान आधार' : 'Why these matches?',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? const Color(0xFFECFDF5) : const Color(0xFF065F46),
+                        ),
+                      ),
+                    ),
+                    if (isOffline)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF065F46) : const Color(0xFFD1FAE5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.offline_pin, size: 12, color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF059669)),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${strings.offlineReady} · $cachedLabel',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   body,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF047857),
-                    height: 1.4,
+                    color: isDark ? const Color(0xFFD1FAE5) : const Color(0xFF047857),
+                    height: 1.3,
                   ),
                 ),
               ],

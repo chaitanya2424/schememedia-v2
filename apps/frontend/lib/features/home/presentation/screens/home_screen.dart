@@ -258,7 +258,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: AppSpacing.xs),
         SizedBox(
-          height: 92,
+          height: 90,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -270,8 +270,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 onTap: () => context.push(AppRoutes.searchPath(cat.name)),
                 child: Container(
-                  width: 104,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  width: 116,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   decoration: BoxDecoration(
                     color: colors.surface,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -282,14 +282,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
                           color: cat.color.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(cat.icon, size: 20, color: cat.color),
+                        child: Icon(cat.icon, size: 19, color: cat.color),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 5),
                       Text(
                         strings.categoryName(cat.name),
                         maxLines: 1,
@@ -297,6 +297,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         textAlign: TextAlign.center,
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.w600,
+                          fontSize: 11,
                           color: colors.textPrimary,
                         ),
                       ),
@@ -465,14 +466,14 @@ class _HeroCard extends ConsumerWidget {
     final String body = hasMatches
         ? (categories.isEmpty
               ? (strings.isHindi
-                  ? 'आपकी जनसांख्यिकीय प्रोफ़ाइल के आधार पर रैंकिंग की गई है।'
-                  : 'Ranked based on your verified demographic profile attributes.')
+                  ? 'आपकी जनसांख्यिकीय प्रोफ़ाइल के अनुसार प्राथमिकता दी गई है।'
+                  : 'Prioritized according to your verified profile attributes.')
               : (strings.isHindi
-                  ? 'आप ${categories.map(strings.categoryName).join(', ')} की योजनाओं के लिए पात्र हैं।'
-                  : 'You qualify for welfare assistance across ${categories.join(', ')}.'))
+                  ? 'पात्रता श्रेणियां: ${categories.map(strings.categoryName).join(', ')}'
+                  : 'Eligible categories: ${categories.join(', ')}'))
         : (strings.isHindi
-            ? '1,000+ केंद्र और राज्य कल्याणकारी योजनाओं से मिलान करने के लिए कुछ प्रश्नों के उत्तर दें। पारदर्शी, तेज़ और पूर्णतः निजी।'
-            : 'Answer a few quick questions to match 1,000+ central & state welfare programs. Transparent, fast, and 100% private.');
+            ? '1,000+ केंद्र और राज्य कल्याणकारी योजनाओं में अपनी पात्रता जांचें।'
+            : 'Check verified eligibility across 1,000+ central & state welfare programs.');
     final String buttonLabel = hasMatches
         ? (strings.isHindi ? 'मेरी योजनाएं देखें' : 'See my matches')
         : (strings.isHindi ? 'पात्रता जांचें' : 'Check My Eligibility');
@@ -610,20 +611,25 @@ class _TrustMetricRow extends ConsumerWidget {
     final strings = ref.watch(stringsProvider);
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(color: colors.divider.withValues(alpha: 0.6)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildItem(context, strings.trustSchemesCount, strings.trustSchemesLabel, Icons.verified_outlined, colors.brand),
-          Container(width: 1, height: 32, color: colors.divider),
-          _buildItem(context, strings.trustStatesCount, strings.trustStatesLabel, Icons.map_outlined, const Color(0xFF0D9488)),
-          Container(width: 1, height: 32, color: colors.divider),
-          _buildItem(context, strings.trustFreeCount, strings.trustFreeLabel, Icons.lock_outline, const Color(0xFF2563EB)),
+          Expanded(
+            child: _buildItem(context, strings.trustSchemesCount, strings.trustSchemesLabel, Icons.verified_outlined, colors.brand),
+          ),
+          Container(width: 1, height: 28, color: colors.divider),
+          Expanded(
+            child: _buildItem(context, strings.trustStatesCount, strings.trustStatesLabel, Icons.map_outlined, const Color(0xFF0D9488)),
+          ),
+          Container(width: 1, height: 28, color: colors.divider),
+          Expanded(
+            child: _buildItem(context, strings.trustFreeCount, strings.trustFreeLabel, Icons.lock_outline, const Color(0xFF2563EB)),
+          ),
         ],
       ),
     );
@@ -633,31 +639,44 @@ class _TrustMetricRow extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = context.colors;
 
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: iconColor),
-            const SizedBox(width: 4),
-            Text(
-              value,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: colors.textPrimary,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: iconColor),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colors.textPrimary,
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colors.textSecondary,
-            fontSize: 10,
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -707,8 +726,8 @@ class _ProfileConfidenceCard extends ConsumerWidget {
           Text(
             answered == 0
                 ? (strings.isHindi
-                    ? 'सटीक पात्रता रैंकिंग देखने के लिए अपनी प्रोफ़ाइल में प्रश्नों के उत्तर दें।'
-                    : 'Answer questions in your profile to unlock precise eligibility ranking.')
+                    ? 'सटीक पात्रता मिलान के लिए कुछ प्रश्नों के उत्तर दें।'
+                    : 'Answer questions in your profile for accurate eligibility.')
                 : (strings.isHindi
                     ? 'उच्च सटीकता के लिए $_totalAttributes में से $answered विवरण दिए गए।'
                     : '$answered of $_totalAttributes parameters answered for high accuracy.'),
@@ -724,36 +743,20 @@ class _ProfileConfidenceCard extends ConsumerWidget {
               valueColor: AlwaysStoppedAnimation<Color>(colors.brand),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: colors.surfaceMuted,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              border: Border.all(color: colors.divider.withValues(alpha: 0.5)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.shield_outlined, size: AppSpacing.iconSm, color: const Color(0xFF16A34A)),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        strings.dpdpTitle,
-                        style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        strings.dpdpSubtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                      ),
-                    ],
-                  ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              const Icon(Icons.shield_outlined, size: 13, color: Color(0xFF16A34A)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '${strings.dpdpTitle} · ${strings.dpdpSubtitle}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 10.5, color: colors.textTertiary),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.sm),
           SizedBox(

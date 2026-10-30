@@ -384,7 +384,9 @@ class _ProfileCompletionCard extends ConsumerWidget {
                       icon: const Icon(Icons.bolt_rounded, size: 18),
                       label: Text(
                         strings.oneTapPresets,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
                       ),
                     ),
                   ),
@@ -406,7 +408,9 @@ class _ProfileCompletionCard extends ConsumerWidget {
                       icon: const Icon(Icons.quiz_outlined, size: 18),
                       label: Text(
                         strings.quickQuiz,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
                       ),
                     ),
                   ),
@@ -446,7 +450,9 @@ class _ProfileCompletionCard extends ConsumerWidget {
                       icon: const Icon(Icons.verified_user_rounded, size: 16),
                       label: Text(
                         strings.isHindi ? 'डिजिलॉकर' : 'DigiLocker',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
                       ),
                     ),
                   ),
@@ -482,7 +488,9 @@ class _ProfileCompletionCard extends ConsumerWidget {
                       icon: const Icon(Icons.document_scanner_rounded, size: 16),
                       label: Text(
                         strings.isHindi ? 'आधार स्कैन' : 'Scan Aadhaar',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
                       ),
                     ),
                   ),
