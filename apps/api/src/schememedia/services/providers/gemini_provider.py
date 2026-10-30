@@ -128,6 +128,7 @@ class GeminiProvider:
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(
                         disable=True
                     ),
+                    temperature=0.0,
                 ),
             )
 
@@ -191,7 +192,11 @@ class GeminiProvider:
             return self._client.models.generate_content(
                 model=model_name,
                 contents=prompt,
-                config=types.GenerateContentConfig(system_instruction=system_prompt),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    max_output_tokens=700,
+                    temperature=0.2,
+                ),
             )
 
         response = self._run_with_model_fallback(_generate)

@@ -194,6 +194,12 @@ class AppStrings {
       isHindi ? 'यह उत्तर पूरी तरह सटीक नहीं हो सकता:' : 'This reply may not be fully accurate:';
   String get hideSources => isHindi ? 'स्रोत छिपाएं' : 'Hide sources';
   String sourcesWithCount(int count) => isHindi ? 'स्रोत ($count)' : 'Sources ($count)';
+  String get assistantThinkingStep1 =>
+      isHindi ? 'आपके प्रश्न का विश्लेषण कर रहे हैं…' : 'Analyzing question & profile…';
+  String get assistantThinkingStep2 =>
+      isHindi ? 'सत्यापित योजनाओं की खोज कर रहे हैं…' : 'Searching verified schemes database…';
+  String get assistantThinkingStep3 =>
+      isHindi ? 'पात्रता जांच और विवरण तैयार कर रहे हैं…' : 'Evaluating criteria & preparing reply…';
 
   // Scheme Details & Explanations
   String get aboutScheme => isHindi ? 'योजना के बारे में' : 'About';

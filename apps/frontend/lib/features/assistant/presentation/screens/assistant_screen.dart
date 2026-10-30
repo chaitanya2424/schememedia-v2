@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -387,22 +389,75 @@ class _SuggestionCard extends StatelessWidget {
   }
 }
 
-class _TypingIndicator extends StatelessWidget {
+class _TypingIndicator extends ConsumerStatefulWidget {
   const _TypingIndicator();
+
+  @override
+  ConsumerState<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends ConsumerState<_TypingIndicator> {
+  int _step = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 1400), (t) {
+      if (!mounted) return;
+      if (_step < 2) {
+        setState(() => _step++);
+      } else {
+        t.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
+
+    final String statusText;
+    final IconData statusIcon;
+    switch (_step) {
+      case 0:
+        statusText = strings.assistantThinkingStep1;
+        statusIcon = Icons.psychology_outlined;
+        break;
+      case 1:
+        statusText = strings.assistantThinkingStep2;
+        statusIcon = Icons.search_rounded;
+        break;
+      default:
+        statusText = strings.assistantThinkingStep3;
+        statusIcon = Icons.auto_awesome_rounded;
+        break;
+    }
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: colors.surfaceMuted,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: colors.divider),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(color: colors.brand.withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -410,10 +465,41 @@ class _TypingIndicator extends StatelessWidget {
             SizedBox(
               height: 14,
               width: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: colors.brand),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colors.brand,
+              ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Text('Thinking…', style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary)),
+            Text(
+              'Thinking…',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 3.5,
+              height: 3.5,
+              decoration: BoxDecoration(
+                color: colors.textTertiary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(statusIcon, size: 14, color: colors.brand),
+            const SizedBox(width: 6),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                statusText,
+                key: ValueKey(_step),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           ],
         ),
       ),
