@@ -255,6 +255,18 @@ class AppStrings {
   String get expressProfileSetup =>
       isHindi ? 'त्वरित 30-सेकंड प्रोफ़ाइल' : '30-Sec Express Profile';
 
+  // Offline Profile-Tailored Welfare Pocket
+  String get offlineMode => isHindi ? 'ऑफ़लाइन मोड' : 'Offline Mode';
+  String get offlineReady => isHindi ? 'ऑफ़लाइन तैयार' : 'Offline Ready';
+  String get offlinePocketTitle =>
+      isHindi ? 'ऑफ़लाइन कल्याण पॉकेट' : 'Offline Welfare Pocket';
+  String offlineProfileSchemesCount(int count, String profile) => isHindi
+      ? '$count $profile योजनाएं बिना इंटरनेट उपलब्ध'
+      : '$count $profile schemes available offline';
+  String get offlinePocketSubtitle => isHindi
+      ? 'आपकी प्रोफ़ाइल के आधार पर सुरक्षित की गई योजनाएं। बिना इंटरनेट क्षेत्र में भी उपयोगी।'
+      : 'Saved for your profile. Full details & criteria ready without cellular data.';
+
   // Common UI
   String get continueText => isHindi ? 'आगे बढ़ें' : 'Continue';
   String get getStarted => isHindi ? 'शुरू करें' : 'Get started';
@@ -263,6 +275,7 @@ class AppStrings {
   String get createAccount => isHindi ? 'खाता बनाएं' : 'Create account';
   String get retry => isHindi ? 'पुनः प्रयास करें' : 'Retry';
 }
+
 
 final stringsProvider = Provider<AppStrings>((ref) {
   final lang = ref.watch(languageProvider);

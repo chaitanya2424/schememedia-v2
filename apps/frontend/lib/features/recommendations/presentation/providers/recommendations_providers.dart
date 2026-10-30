@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/local/profile_offline_cache_repository.dart';
 import '../../../../core/network/providers.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
@@ -12,7 +13,10 @@ final recommendationsApiProvider = Provider<RecommendationsApi>(
 );
 
 final recommendationsRepositoryProvider = Provider<RecommendationsRepository>(
-  (ref) => RecommendationsRepository(ref.watch(recommendationsApiProvider)),
+  (ref) => RecommendationsRepository(
+    ref.watch(recommendationsApiProvider),
+    ref.watch(profileOfflineCacheRepositoryProvider),
+  ),
 );
 
 /// Screen-level notifier. Signed out: unchanged -- calls the public

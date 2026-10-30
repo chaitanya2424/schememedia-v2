@@ -94,8 +94,42 @@ def reciprocal_rank_fusion(
 import time
 
 _SEARCH_CACHE: dict[tuple[str, int], tuple[float, SearchResponse]] = {}
-_SEARCH_CACHE_TTL_SECONDS = 300  # 5 minutes
-_MAX_SEARCH_CACHE_SIZE = 500
+_SEARCH_CACHE_TTL_SECONDS = 1800  # 30 minutes
+_MAX_SEARCH_CACHE_SIZE = 2000
+
+POPULAR_WARMUP_QUERIES = [
+    "farmer",
+    "scholarship",
+    "housing",
+    "pmay",
+    "ayushman",
+    "mudra",
+    "women",
+    "loan",
+    "pension",
+    "agriculture",
+    "kisan",
+    "education",
+    "health",
+    "grant",
+    "subsidy",
+    "senior citizen",
+    "employment",
+    "किसान",
+    "छात्रवृत्ति",
+    "आवास",
+    "आयुष्मान",
+    "महिला",
+]
+
+
+def warm_up_search(service: SearchService) -> None:
+    """Pre-warm both embedding model and query cache with popular queries."""
+    for query in POPULAR_WARMUP_QUERIES:
+        try:
+            service.search(query, limit=20)
+        except Exception:
+            pass
 
 
 @dataclass
@@ -119,7 +153,8 @@ class SearchService:
         if not cleaned_query or not self.keyword.has_searchable_terms(cleaned_query):
             return SearchResponse(query=query)
 
-        cache_key = (cleaned_query.lower(), limit)
+        normalized_q = " ".join(cleaned_query.lower().split())
+        cache_key = (normalized_q, limit)
         now = time.monotonic()
         if cache_key in _SEARCH_CACHE:
             cached_at, cached_response = _SEARCH_CACHE[cache_key]

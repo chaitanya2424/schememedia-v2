@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/local/profile_offline_cache_repository.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -133,6 +134,48 @@ class _ResultsView extends ConsumerWidget {
                 ? 'सटीक व्यक्तिगत पात्रता देखने के लिए प्रोफ़ाइल विवरण जोड़ें।'
                 : 'Add some profile details to see personalized eligibility instead of "unknown".',
           ),
+        if (ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable) ...[
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF065F46).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.offline_pin, color: Color(0xFF059669), size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        strings.offlineProfileSchemesCount(
+                          response.totalReturned,
+                          ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ??
+                              (strings.isHindi ? 'नागरिक' : 'Citizen'),
+                        ),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF065F46),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        strings.offlinePocketSubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF047857),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [

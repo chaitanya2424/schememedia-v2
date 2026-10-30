@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/local/profile_offline_cache_repository.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -94,7 +95,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final colors = context.colors;
     final strings = ref.watch(stringsProvider);
     final wide = Breakpoints.of(context) == ScreenSize.wide;
-    final recommendations = ref.watch(recommendationsNotifierProvider).valueOrNull;
+    final cachedOfflineRecs = ref.watch(profileOfflineCacheRepositoryProvider).getCachedRecommendations();
+    final recommendations = ref.watch(recommendationsNotifierProvider).valueOrNull ?? cachedOfflineRecs;
     final answered = ref.watch(
       profileFormControllerProvider.select((c) => c.totalAnswered),
     );
@@ -523,6 +525,31 @@ class _HeroCard extends ConsumerWidget {
               height: 1.4,
             ),
           ),
+          if (ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF065F46).withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.offline_pin, size: 14, color: Color(0xFF34D399)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${strings.offlinePocketTitle} · ${ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ?? (strings.isHindi ? 'नागरिक' : 'Citizen')} (${strings.offlineReady})',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: const Color(0xFF6EE7B7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           Wrap(
             spacing: AppSpacing.sm,

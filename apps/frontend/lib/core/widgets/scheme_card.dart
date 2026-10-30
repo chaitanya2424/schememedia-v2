@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/enums.dart';
+import '../local/profile_offline_cache_repository.dart';
 import '../local/saved_schemes_repository.dart';
 import '../localization/app_strings.dart';
 import '../theme/app_colors.dart';
@@ -196,6 +197,30 @@ class SchemeCard extends ConsumerWidget {
             children: [
               if (eligibilityState != null) EligibilityStateBadge(state: eligibilityState!),
               VerificationBadge(status: verificationStatus, needsReview: needsReview),
+              if (ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF059669).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.offline_pin, size: 12, color: Color(0xFF059669)),
+                      const SizedBox(width: 4),
+                      Text(
+                        strings.offlineReady,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF047857),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

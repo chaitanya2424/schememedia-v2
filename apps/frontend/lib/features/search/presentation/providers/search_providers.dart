@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/local/profile_offline_cache_repository.dart';
 import '../../../../core/network/providers.dart';
 import '../../data/search_api.dart';
 import '../../data/search_repository.dart';
@@ -8,7 +9,10 @@ import '../../domain/scheme_summary.dart';
 final searchApiProvider = Provider<SearchApi>((ref) => SearchApi(ref.watch(apiClientProvider)));
 
 final searchRepositoryProvider = Provider<SearchRepository>(
-  (ref) => SearchRepository(ref.watch(searchApiProvider)),
+  (ref) => SearchRepository(
+    ref.watch(searchApiProvider),
+    ref.watch(profileOfflineCacheRepositoryProvider),
+  ),
 );
 
 /// Manual (non-codegen) Riverpod notifier -- see the frontend architecture

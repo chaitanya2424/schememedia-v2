@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/local/profile_offline_cache_repository.dart';
 import '../../../../core/network/providers.dart';
 import '../../data/scheme_detail_api.dart';
 import '../../data/scheme_detail_repository.dart';
@@ -10,7 +11,10 @@ final schemeDetailApiProvider = Provider<SchemeDetailApi>(
 );
 
 final schemeDetailRepositoryProvider = Provider<SchemeDetailRepository>(
-  (ref) => SchemeDetailRepository(ref.watch(schemeDetailApiProvider)),
+  (ref) => SchemeDetailRepository(
+    ref.watch(schemeDetailApiProvider),
+    ref.watch(profileOfflineCacheRepositoryProvider),
+  ),
 );
 
 /// Parameterized (family) provider keyed by identifier -- each distinct

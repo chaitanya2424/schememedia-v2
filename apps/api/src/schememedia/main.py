@@ -57,16 +57,33 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # is instantaneous and does not block worker threads or time out.
     import threading
 
-    def _warmup_embedding_model() -> None:
+    def _warmup_search_and_embeddings() -> None:
         try:
-            from schememedia.repositories.search import get_shared_embedding_model
+            from schememedia.db import sync_session
+            from schememedia.repositories.search import (
+                PgVectorRetriever,
+                SqlKeywordRetriever,
+                get_shared_embedding_model,
+            )
+            from schememedia.services.search import SearchService, warm_up_search
 
             get_shared_embedding_model()
             logger.info("embedding_model_prewarmed")
-        except Exception as e:
-            logger.warning("embedding_model_warmup_deferred", error=str(e))
 
-    threading.Thread(target=_warmup_embedding_model, daemon=True).start()
+            session = sync_session.get_sync_session()
+            try:
+                service = SearchService(
+                    keyword=SqlKeywordRetriever(session),
+                    semantic=PgVectorRetriever(session),
+                )
+                warm_up_search(service)
+                logger.info("search_cache_prewarmed")
+            finally:
+                session.close()
+        except Exception as e:
+            logger.warning("search_warmup_deferred", error=str(e))
+
+    threading.Thread(target=_warmup_search_and_embeddings, daemon=True).start()
 
     yield
 
