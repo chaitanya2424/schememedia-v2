@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/domain/enums.dart';
 import '../../../../core/local/profile_offline_cache_repository.dart';
+import '../../../../core/local/saved_schemes_repository.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/router/routes.dart';
@@ -61,6 +63,7 @@ class _SchemeDetailScreenState extends ConsumerState<SchemeDetailScreen> {
     final detailAsync = ref.watch(schemeDetailProvider(widget.identifier));
     final lang = ref.watch(languageProvider);
     final detail = detailAsync.value;
+    final isMobile = Breakpoints.of(context) == ScreenSize.mobile;
     final title = (lang == AppLanguage.hindi && detail?.nameHi != null)
         ? detail!.nameHi!
         : (detail?.name ?? (lang == AppLanguage.hindi ? 'योजना विवरण' : 'Scheme details'));
@@ -68,13 +71,47 @@ class _SchemeDetailScreenState extends ConsumerState<SchemeDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        actions: const [
-          Padding(
+        actions: [
+          IconButton(
+            tooltip: lang == AppLanguage.hindi ? 'साझा करें' : 'Share scheme',
+            icon: const Icon(Icons.share_outlined, size: 20),
+            onPressed: detail == null
+                ? null
+                : () async {
+                    final shareText = StringBuffer()
+                      ..writeln(title)
+                      ..writeln(lang == AppLanguage.hindi ? 'सरकारी कल्याणकारी योजना' : 'Government Welfare Scheme');
+                    if (detail.descriptionShort != null) {
+                      shareText.writeln(detail.descriptionShort);
+                    }
+                    if (detail.officialUrl != null) {
+                      shareText.writeln(detail.officialUrl);
+                    }
+                    await Clipboard.setData(ClipboardData(text: shareText.toString().trim()));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            lang == AppLanguage.hindi
+                                ? '✓ योजना विवरण कॉपी किया गया!'
+                                : '✓ Scheme link copied to clipboard!',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+          ),
+          const Padding(
             padding: EdgeInsets.only(right: AppSpacing.md),
             child: LanguageToggleButton(),
           ),
         ],
       ),
+      bottomNavigationBar: isMobile && detail != null
+          ? _StickyBottomActionBar(detail: detail)
+          : null,
       body: SafeArea(
         child: ResponsiveContainer(
           maxWidth: AppSpacing.maxWideContentWidth,
@@ -954,17 +991,50 @@ class _KeepTheseReadyBox extends ConsumerWidget {
                   style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: colors.brandTint,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${documents.length} ${lang == AppLanguage.hindi ? 'दस्तावेज़' : 'Items'}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colors.brand,
-                    fontWeight: FontWeight.w700,
+              InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () async {
+                  final listText = StringBuffer()
+                    ..writeln(lang == AppLanguage.hindi ? 'आवश्यक दस्तावेज़ चेकलिस्ट:' : 'Required Document Checklist:');
+                  for (int i = 0; i < documents.length; i++) {
+                    listText.writeln('${i + 1}. ${documents[i].name}');
+                  }
+                  await Clipboard.setData(ClipboardData(text: listText.toString().trim()));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          lang == AppLanguage.hindi
+                              ? '✓ दस्तावेज़ चेकलिस्ट कॉपी की गई!'
+                              : '✓ Document checklist copied to clipboard!',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: colors.divider),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.copy_rounded, size: 12, color: colors.brand),
+                      const SizedBox(width: 4),
+                      Text(
+                        lang == AppLanguage.hindi ? 'चेकलिस्ट कॉपी करें' : 'Copy List',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: colors.brand,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1421,3 +1491,78 @@ class _StatCount extends StatelessWidget {
     );
   }
 }
+
+class _StickyBottomActionBar extends ConsumerWidget {
+  const _StickyBottomActionBar({required this.detail});
+
+  final SchemeDetail detail;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final lang = ref.watch(languageProvider);
+    final isSaved = ref.watch(savedSchemesProvider.select((s) => s.containsKey(detail.schemeId)));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.divider)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.08),
+            offset: const Offset(0, -3),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            IconButton.filledTonal(
+              tooltip: isSaved ? 'Remove from saved' : 'Save scheme',
+              onPressed: () {
+                ref.read(savedSchemesProvider.notifier).toggle(
+                  SavedScheme(
+                    schemeId: detail.schemeId,
+                    name: detail.name,
+                    category: detail.category,
+                    description: detail.descriptionShort,
+                    verificationStatus: detail.verificationStatus,
+                    needsReview: detail.needsReview,
+                  ),
+                );
+              },
+              icon: Icon(
+                isSaved ? Icons.bookmark : Icons.bookmark_border,
+                color: isSaved ? colors.brand : colors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.primaryAction,
+                  foregroundColor: colors.onPrimaryAction,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: detail.officialUrl == null
+                    ? null
+                    : () => launchUrl(Uri.parse(detail.officialUrl!), mode: LaunchMode.externalApplication),
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: Text(
+                  lang == AppLanguage.hindi ? 'आधिकारिक पोर्टल पर जाएं' : 'Visit Official Portal',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

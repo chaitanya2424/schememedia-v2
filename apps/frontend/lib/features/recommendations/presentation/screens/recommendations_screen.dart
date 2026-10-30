@@ -57,9 +57,13 @@ class RecommendationsScreen extends ConsumerWidget {
               return const ResponsiveContainer(maxWidth: 600, child: RecommendationsWizard());
             }
             return ResponsiveContainer(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: _ResultsView(response: response),
+              child: RefreshIndicator(
+                onRefresh: () async => ref.read(recommendationsNotifierProvider.notifier).retry(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: _ResultsView(response: response),
+                ),
               ),
             );
           },

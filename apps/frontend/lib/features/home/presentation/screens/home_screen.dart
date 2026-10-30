@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/local/profile_offline_cache_repository.dart';
+import '../../../../core/local/recent_searches_repository.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/widgets/responsive.dart';
+import '../../../notifications/presentation/providers/notifications_providers.dart';
 import '../../../notifications/presentation/widgets/notification_bell_button.dart';
 import '../../../recommendations/domain/recommendation.dart';
 import '../../../recommendations/presentation/providers/profile_form_provider.dart';
@@ -87,6 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _submit([String? value]) {
     final query = (value ?? _controller.text).trim();
     if (query.isEmpty) return;
+    ref.read(recentSearchesProvider.notifier).addQuery(query);
     context.push(AppRoutes.searchPath(query));
   }
 
@@ -101,10 +104,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final answered = ref.watch(
       profileFormControllerProvider.select((c) => c.totalAnswered),
     );
+    final isOffline = ref.watch(profileOfflineCacheRepositoryProvider).isOfflineAvailable;
+    final recentSearches = ref.watch(recentSearchesProvider);
 
     final mainColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (isOffline) ...[
+          const _OfflineStatusBar(),
+          const SizedBox(height: AppSpacing.xs),
+        ],
         // --- 1. Clean Title with Verified National Portal Badge ---
         Row(
           children: [
@@ -188,24 +197,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
 
-        // --- 4. Quick Trending Search Suggestions ---
+        // --- 4. Dynamic Recent Searches & Trending Suggestions ---
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: [
               Text(
-                strings.isHindi ? 'लोकप्रिय: ' : 'Popular: ',
+                recentSearches.isNotEmpty
+                    ? (strings.isHindi ? 'हाल में: ' : 'Recent: ')
+                    : (strings.isHindi ? 'लोकप्रिय: ' : 'Popular: '),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: colors.textTertiary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              for (final prompt in (strings.isHindi ? _hindiQuickSearchPrompts : _quickSearchPrompts))
+              for (final prompt in (recentSearches.isNotEmpty
+                  ? recentSearches
+                  : (strings.isHindi ? _hindiQuickSearchPrompts : _quickSearchPrompts)))
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: ActionChip(
                     visualDensity: VisualDensity.compact,
+                    avatar: recentSearches.isNotEmpty
+                        ? Icon(Icons.history, size: 13, color: colors.brand)
+                        : null,
                     backgroundColor: colors.surfaceMuted,
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(
@@ -223,6 +239,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _submit(prompt);
                     },
                   ),
+                ),
+              if (recentSearches.isNotEmpty)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: strings.isHindi ? 'इतिहास साफ़ करें' : 'Clear search history',
+                  icon: Icon(Icons.close, size: 14, color: colors.textTertiary),
+                  onPressed: () => ref.read(recentSearchesProvider.notifier).clearAll(),
                 ),
             ],
           ),
@@ -363,9 +386,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         body: SafeArea(
           child: ResponsiveContainer(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: mainColumn,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(recommendationsNotifierProvider);
+                ref.invalidate(notificationsProvider);
+                await Future.delayed(const Duration(milliseconds: 300));
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: mainColumn,
+              ),
             ),
           ),
         ),
@@ -397,24 +428,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         child: ResponsiveContainer(
           maxWidth: AppSpacing.maxWideContentWidth,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 2, child: mainColumn),
-                const SizedBox(width: AppSpacing.lg),
-                SizedBox(
-                  width: 320,
-                  child: Column(
-                    children: [
-                      _ProfileConfidenceCard(answered: answered),
-                      const SizedBox(height: AppSpacing.lg),
-                      const _ShortcutsCard(),
-                    ],
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(recommendationsNotifierProvider);
+              ref.invalidate(notificationsProvider);
+              await Future.delayed(const Duration(milliseconds: 300));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 2, child: mainColumn),
+                  const SizedBox(width: AppSpacing.lg),
+                  SizedBox(
+                    width: 320,
+                    child: Column(
+                      children: [
+                        _ProfileConfidenceCard(answered: answered),
+                        const SizedBox(height: AppSpacing.lg),
+                        const _ShortcutsCard(),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -892,6 +931,47 @@ class _PickedForYou extends ConsumerWidget {
             child: RecommendationCard(recommendation: rec),
           ),
       ],
+    );
+  }
+}
+
+class _OfflineStatusBar extends ConsumerWidget {
+  const _OfflineStatusBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(stringsProvider);
+    final cachedLabel = ref.watch(profileOfflineCacheRepositoryProvider).cachedProfileLabel ??
+        (strings.isHindi ? 'नागरिक' : 'Citizen');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF065F46).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.offline_pin, size: 15, color: Color(0xFF059669)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              strings.isHindi
+                  ? '⚡ ऑफ़लाइन मोड सक्रिय · $cachedLabel के लिए योजनाएं सुरक्षित हैं'
+                  : '⚡ Offline Mode Active · Schemes cached for $cachedLabel',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF047857),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
