@@ -28,7 +28,6 @@ dict, mutually exclusive with the Schema-typed `parameters` field) and
 
 from __future__ import annotations
 
-import json
 import uuid
 from typing import Any
 
@@ -37,7 +36,7 @@ from google.genai import types
 
 from schememedia.services.providers.base import ToolCall
 
-DEFAULT_MODEL = "gemini-3.5-flash"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 FALLBACK_MODELS = ("gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash")
 
 # Audit finding H1: an unconfigured client has no request timeout at all.
@@ -103,7 +102,8 @@ class GeminiProvider:
             except Exception as exc:
                 last_error = exc
                 err_str = str(exc)
-                if any(code in err_str for code in ("503", "404", "429", "UNAVAILABLE", "NOT_FOUND")):
+                codes = ("503", "404", "429", "UNAVAILABLE", "NOT_FOUND")
+                if any(code in err_str for code in codes):
                     continue
                 raise
         if last_error:
@@ -180,30 +180,17 @@ class GeminiProvider:
         tool_call: ToolCall,
         tool_result_json: str,
     ) -> str:
-        function_call_content = types.Content(
-            role="model",
-            parts=[tool_call.raw["function_call_part"]],
+        prompt = (
+            f"User Question: {user_message}\n\n"
+            f"Search and Scheme Evaluation Results from Database:\n{tool_result_json}\n\n"
+            "Please answer the user's question clearly and concisely "
+            "based strictly on these results."
         )
-        function_response_part = types.Part.from_function_response(
-            name=tool_call.name,
-            response={"result": json.loads(tool_result_json)},
-        )
-        # 'user', not 'tool' -- Content.role's own docstring in the
-        # installed SDK is explicit: "Must be either 'user' or 'model'".
-        # This is the turn that carries the function result back to the
-        # model. list[Content] vs. the SDK's broader content-union
-        # parameter type is a list-invariance mypy false positive, not a
-        # real mismatch -- every element genuinely is a Content.
-        contents: list[Any] = [
-            types.Content(role="user", parts=[types.Part(text=user_message)]),
-            function_call_content,
-            types.Content(role="user", parts=[function_response_part]),
-        ]
 
         def _generate(model_name: str) -> Any:
             return self._client.models.generate_content(
                 model=model_name,
-                contents=contents,
+                contents=prompt,
                 config=types.GenerateContentConfig(system_instruction=system_prompt),
             )
 
